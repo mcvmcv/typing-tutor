@@ -1,8 +1,16 @@
 import json
+from dataclasses import asdict
 
-from conftest import key_stat
+import pytest
+from conftest import finish_steps, key_stat
 
-from typing_tutor.storage import KEY_STATS_WINDOW, ProfileStore
+from typing_tutor.storage import (
+    KEY_STATS_WINDOW,
+    BackupError,
+    Profile,
+    ProfileStore,
+    read_backup,
+)
 
 
 def test_profiles_survive_a_reload(store, player):
@@ -100,3 +108,112 @@ def test_unreadable_files_are_kept_aside_not_overwritten(tmp_path):
 def test_saving_leaves_no_temporary_file(store, player):
     assert store.path.exists()
     assert not store.path.with_suffix(".tmp").exists()
+
+
+# Backups ---------------------------------------------------------------------
+
+
+def test_backup_round_trip(tmp_path, store, player):
+    finish_steps(store, player, 3)
+    player.key_stats = {"f": key_stat(20)}
+    player.game_best = {"easy": 120}
+    store.export_backup(tmp_path / "backup.json")
+    (loaded,) = read_backup(tmp_path / "backup.json")
+    assert loaded == player
+
+
+def test_a_copied_save_file_works_as_a_backup(store, player):
+    finish_steps(store, player, 2)
+    assert read_backup(store.path) == [player]
+
+
+def write_json(path, data):
+    path.write_text(json.dumps(data), encoding="utf-8")
+    return path
+
+
+def good_player(**changes):
+    data = {"id": "abc", "name": "Mia", "color": "#f06292", "history": [], "best": {}}
+    return data | changes
+
+
+@pytest.mark.parametrize(
+    ("content", "message"),
+    [
+        ("not json at all", "isn't a Learn Typing backup"),
+        ("[1, 2, 3]", "isn't a Learn Typing backup"),
+        ('{"profiles": "nope"}', "isn't a Learn Typing backup"),
+        ('{"version": "one", "profiles": []}', "isn't a Learn Typing backup"),
+        ('{"version": 2, "profiles": []}', "newer version"),
+        ('{"version": 1, "profiles": []}', "doesn't have any players"),
+    ],
+)
+def test_unreadable_backups_are_refused(tmp_path, content, message):
+    path = tmp_path / "backup.json"
+    path.write_text(content, encoding="utf-8")
+    with pytest.raises(BackupError, match=message):
+        read_backup(path)
+
+
+@pytest.mark.parametrize(
+    ("player", "message"),
+    [
+        ("Mia", "isn't in the right format"),
+        (good_player(name=""), "missing their name"),
+        (good_player(id=7), "missing their id"),
+        (good_player(best={"home-row/fj": {"stars": "lots"}}), "stars"),
+        (good_player(history=[{"step": "x"}]), "practice history"),
+        (
+            good_player(
+                history=[{"step": "x", "wpm": 1, "accuracy": 1, "stars": 1, "when": "soon"}]
+            ),
+            "date",
+        ),
+        (good_player(key_stats={"f": {"h": 1}}), "key stats"),
+        (good_player(key_stats={"f": {"h": True, "m": 0, "t": 0, "n": 0}}), "key stats"),
+        (good_player(game_best={"easy": "high"}), "Balloon Pop"),
+    ],
+)
+def test_backups_with_broken_players_are_refused(tmp_path, player, message):
+    path = write_json(tmp_path / "backup.json", {"profiles": [player]})
+    with pytest.raises(BackupError, match=message):
+        read_backup(path)
+
+
+def test_duplicate_players_are_refused(tmp_path):
+    path = write_json(tmp_path / "backup.json", {"profiles": [good_player(), good_player()]})
+    with pytest.raises(BackupError, match="twice"):
+        read_backup(path)
+
+
+def test_missing_backup_file(tmp_path):
+    with pytest.raises(BackupError, match="couldn't be opened"):
+        read_backup(tmp_path / "nowhere.json")
+
+
+def test_import_adds_replaces_and_renames(tmp_path, store, player):
+    other = ProfileStore(tmp_path / "other.json")
+    other.add("Leo", "#64b5f6")
+    other.add("Sam", "#81c784")  # a different Sam from the one already here
+    newer_player = Profile.from_dict(asdict(player))
+    newer_player.speed_goal = 25
+    incoming = [*other.profiles, newer_player]
+
+    plan = store.import_profiles(incoming)
+    assert [p.name for p in plan.added] == ["Leo", "Sam 2"]
+    assert plan.renamed == {"Sam": "Sam 2"}
+    assert plan.replaced == [newer_player]
+    assert [p.name for p in store.profiles] == ["Sam", "Leo", "Sam 2"]
+    assert store.get(player.id).speed_goal == 25
+    assert [p.name for p in ProfileStore(store.path).profiles] == ["Sam", "Leo", "Sam 2"]
+
+
+def test_renaming_skips_names_already_used(store, player):
+    store.add("Sam 2", "#81c784")
+    stranger = Profile(id="new", name="Sam", color="#ffb74d")
+    assert store.plan_import([stranger]).renamed == {"Sam": "Sam 3"}
+
+
+def test_planning_changes_nothing(store, player):
+    store.plan_import([Profile(id="new", name="Leo", color="#64b5f6")])
+    assert [p.name for p in store.profiles] == ["Sam"]

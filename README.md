@@ -128,9 +128,16 @@ they're up to, steps and stars, best speed, recent accuracy, when they last
 practised, steps this week, best Balloon Pop score and tricky keys. "See
 progress" opens a player's full progress screen without switching player.
 
+**Backups:** "Save a backup…" writes everyone's progress to one file. "Load a
+backup…" brings players in from a backup, e.g. on a new computer. The file is
+checked first, so a wrong or damaged file is refused with an explanation. New
+players are added (renamed, e.g. "Mia 2", if the name is taken), and if a
+player is already here it asks before replacing their progress.
+
 ## Data
 
-Everything is stored in one JSON file (path above), saved atomically. If it
+Everything is stored in one JSON file (path above), saved atomically. A backup
+file has the same format, and a copy of `profiles.json` also loads as a backup. If it
 ever can't be read, it's renamed to `profiles.broken-<time>.json` rather than
 overwritten.
 
