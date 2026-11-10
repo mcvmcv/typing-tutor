@@ -34,7 +34,7 @@ _FINGER_CHARS = {
     "R5": "0-=p[]\\;'/",
 }
 _FINGER_BY_CHAR = {c: f for f, chars in _FINGER_CHARS.items() for c in chars}
-_SHIFTED = dict(zip("`1234567890-=[]\\;',./", '~!@#$%^&*()_+{}|:"<>?'))
+_SHIFTED = dict(zip("`1234567890-=[]\\;',./", '~!@#$%^&*()_+{}|:"<>?', strict=True))
 
 
 @dataclass(frozen=True)

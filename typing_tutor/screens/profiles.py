@@ -2,12 +2,24 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import (QButtonGroup, QCheckBox, QComboBox, QDialog, QGridLayout, QHBoxLayout,
-                               QLabel, QLineEdit, QMenu, QMessageBox, QPushButton,
-                               QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (
+    QButtonGroup,
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QGridLayout,
+    QHBoxLayout,
+    QLineEdit,
+    QMenu,
+    QMessageBox,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from ..storage import Profile, ProfileStore
 from ..theme import AVATAR_COLORS, INK
+from ..ui import clear_layout, label
 
 MAX_NAME = 12
 COLUMNS = 4
@@ -26,8 +38,8 @@ SPEED_GOALS = (
 class SpeedGoalPicker(QComboBox):
     def __init__(self, goal: int = 0, parent=None):
         super().__init__(parent)
-        for value, label in SPEED_GOALS:
-            self.addItem(label, value)
+        for value, text in SPEED_GOALS:
+            self.addItem(text, value)
         values = [v for v, _ in SPEED_GOALS]
         self.setCurrentIndex(values.index(goal) if goal in values else 0)
 
@@ -46,9 +58,9 @@ class ProfileScreen(QWidget):
         super().__init__(parent)
         self.store = store
 
-        title = QLabel("Who's typing today?", objectName="Title")
+        title = label("Who's typing today?", "Title")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.empty_hint = QLabel("Make a player to get started!", objectName="Subtitle")
+        self.empty_hint = label("Make a player to get started!", "Subtitle")
         self.empty_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.grid = QGridLayout()
@@ -65,7 +77,7 @@ class ProfileScreen(QWidget):
         new_row.addWidget(new_btn)
         new_row.addStretch()
 
-        tip = QLabel("Tip: right-click a player to remove them.", objectName="Subtitle")
+        tip = label("Tip: right-click a player to remove them.", "Subtitle")
         tip.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.tip = tip
 
@@ -82,8 +94,7 @@ class ProfileScreen(QWidget):
         self.refresh()
 
     def refresh(self) -> None:
-        while self.grid.count():
-            self.grid.takeAt(0).widget().deleteLater()
+        clear_layout(self.grid)
         for i, profile in enumerate(self.store.profiles):
             self.grid.addWidget(self._profile_button(profile), i // COLUMNS, i % COLUMNS)
         has_profiles = bool(self.store.profiles)
@@ -108,12 +119,18 @@ class ProfileScreen(QWidget):
         menu = QMenu(self)
         remove = menu.addAction(f"Remove {profile.name}…")
         if menu.exec(btn.mapToGlobal(pos)) is remove:
-            answer = QMessageBox.question(
-                self, "Remove player",
-                f"Remove {profile.name} and all their progress?\nThis can't be undone.")
-            if answer == QMessageBox.StandardButton.Yes:
-                self.store.delete(profile.id)
-                self.refresh()
+            self.confirm_remove(profile)
+
+    def confirm_remove(self, profile: Profile) -> bool:
+        """Ask before deleting a player and all their progress."""
+        answer = QMessageBox.question(
+            self, "Remove player",
+            f"Remove {profile.name} and all their progress?\nThis can't be undone.")
+        if answer != QMessageBox.StandardButton.Yes:
+            return False
+        self.store.delete(profile.id)
+        self.refresh()
+        return True
 
     def _new_player(self) -> None:
         dlg = NewPlayerDialog(self.store, self)
@@ -130,12 +147,12 @@ class NewPlayerDialog(QDialog):
         self.setWindowTitle("New player")
         self.setMinimumWidth(460)
 
-        heading = QLabel("What's your name?", objectName="Heading")
+        heading = label("What's your name?", "Heading")
         self.name_edit = QLineEdit(placeholderText="Your name", maxLength=MAX_NAME)
         self.name_edit.textChanged.connect(self._validate)
-        self.error = QLabel("", objectName="Subtitle")
+        self.error = label("", "Subtitle")
 
-        color_heading = QLabel("Pick your colour", objectName="Heading")
+        color_heading = label("Pick your colour", "Heading")
         self.colors = QButtonGroup(self)
         swatches = QHBoxLayout()
         for i, color in enumerate(AVATAR_COLORS):
@@ -152,14 +169,14 @@ class NewPlayerDialog(QDialog):
         first_free = next((i for i, c in enumerate(AVATAR_COLORS) if c not in used), 0)
         self.colors.button(first_free).setChecked(True)
 
-        speed_heading = QLabel("Speed goal", objectName="Heading")
+        speed_heading = label("Speed goal", "Heading")
         self.speed = SpeedGoalPicker()
-        speed_help = QLabel(SPEED_HELP, objectName="Subtitle", wordWrap=True)
+        speed_help = label(SPEED_HELP, "Subtitle", wrap=True)
 
         self.ok = QPushButton("Let's go!")
         self.ok.setDefault(True)
         self.ok.clicked.connect(self.accept)
-        cancel = QPushButton("Cancel", objectName="cancel")
+        cancel = QPushButton("Cancel")
         cancel.setProperty("role", "secondary")
         cancel.clicked.connect(self.reject)
         buttons = QHBoxLayout()
@@ -206,11 +223,11 @@ class SettingsDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle(f"Settings for {profile.name}")
         self.setMinimumWidth(460)
-        heading = QLabel("Speed goal", objectName="Heading")
+        heading = label("Speed goal", "Heading")
         self.speed = SpeedGoalPicker(profile.speed_goal)
-        help_text = QLabel(SPEED_HELP, objectName="Subtitle", wordWrap=True)
+        help_text = label(SPEED_HELP, "Subtitle", wrap=True)
 
-        sound_heading = QLabel("Sounds", objectName="Heading")
+        sound_heading = label("Sounds", "Heading")
         self.sound = QCheckBox("Sound effects")
         self.sound.setChecked(profile.sound)
         self.clicks = QCheckBox("Click sound on every key")

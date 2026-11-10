@@ -2,16 +2,25 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import ClassVar
 
 from PySide6.QtCore import Qt, QTimer, Signal
-from PySide6.QtWidgets import (QDialog, QHBoxLayout, QLabel, QProgressBar,
-                               QPushButton, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QProgressBar,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from ..keyboard import char_name, finger_hint, fingers_for_char
 from ..plays import Play
 from ..session import StepRun, stars_for
 from ..sounds import SoundPlayer
 from ..theme import repolish
+from ..ui import label, timer
 from ..widgets.hands_view import HandsView
 from ..widgets.keyboard_view import KeyboardView
 from ..widgets.typing_view import TypingView
@@ -43,8 +52,8 @@ class PracticeScreen(QWidget):
         back.setProperty("role", "secondary")
         back.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         back.clicked.connect(self.menu_requested)
-        self.title = QLabel(objectName="Heading")
-        self.step_count = QLabel(objectName="Subtitle")
+        self.title = label("", "Heading")
+        self.step_count = label("", "Subtitle")
         top = QHBoxLayout()
         top.addWidget(back)
         top.addSpacing(16)
@@ -58,14 +67,14 @@ class PracticeScreen(QWidget):
         self.sound_btn.clicked.connect(self._toggle_sound)
         top.addWidget(self.sound_btn)
 
-        self.instruction = QLabel(objectName="Instruction", wordWrap=True)
+        self.instruction = label("", "Instruction", wrap=True)
         self.typing = TypingView()
-        self.next_line = QLabel(objectName="Stat")
+        self.next_line = label("", "Stat")
         self.next_line.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.progress = QProgressBar(textVisible=False)
-        self.accuracy_label = QLabel(objectName="Stat")
-        self.speed_label = QLabel(objectName="Stat")
+        self.accuracy_label = label("", "Stat")
+        self.speed_label = label("", "Stat")
         stats = QHBoxLayout()
         stats.addWidget(self.progress, 1)
         stats.addSpacing(20)
@@ -73,7 +82,7 @@ class PracticeScreen(QWidget):
         stats.addSpacing(20)
         stats.addWidget(self.speed_label)
 
-        self.hint = QLabel(objectName="Hint")
+        self.hint = label("", "Hint")
         self.hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.keyboard = KeyboardView()
         self.hands = HandsView()
@@ -90,7 +99,7 @@ class PracticeScreen(QWidget):
         layout.addWidget(self.keyboard, 5)
         layout.addWidget(self.hands, 2)
 
-        self._stats_timer = QTimer(self, interval=500, timeout=self._update_stats)
+        self._stats_timer = timer(self, 500, self._update_stats)
 
     def start(self, play: Play) -> None:
         self._play = play
@@ -106,6 +115,11 @@ class PracticeScreen(QWidget):
         self._stats_timer.start()
         self.setFocus()
 
+    def _current(self) -> tuple[StepRun, Play]:
+        if self._run is None or self._play is None:
+            raise RuntimeError("start() must be called first")
+        return self._run, self._play
+
     # Keep Tab from moving focus away from the typing area.
     def focusNextPrevChild(self, next: bool) -> bool:
         return False
@@ -119,6 +133,8 @@ class PracticeScreen(QWidget):
             return
         s = run.current
         expected = s.expected
+        if expected is None:
+            return
         if s.press(text):
             self._set_hint(None)
             if not s.finished:
@@ -158,7 +174,7 @@ class PracticeScreen(QWidget):
         repolish(self.hint)
 
     def _refresh(self) -> None:
-        run = self._run
+        run, play = self._current()
         s = run.current
         expected = s.expected
         self.keyboard.set_target_char(expected)
@@ -166,7 +182,7 @@ class PracticeScreen(QWidget):
         self.typing.update()
         self.progress.setValue(run.typed_chars)
         self.step_count.setText(
-            f"{self._play.header} · line {run.index + 1} of {len(run.lines)}")
+            f"{play.header} · line {run.index + 1} of {len(run.lines)}")
         self.next_line.setText("" if run.on_last_line
                                else f"Next:  {run.lines[run.index + 1]}")
         if self._hint_error:
@@ -178,9 +194,9 @@ class PracticeScreen(QWidget):
         self._update_stats()
 
     def _update_stats(self) -> None:
-        s = self._run
-        if s is None:
+        if self._run is None or self._play is None:
             return
+        s = self._run
         self.accuracy_label.setText(f"Accuracy: {s.accuracy():.0f}%")
         goal = self._play.speed_goal
         if goal:
@@ -189,7 +205,7 @@ class PracticeScreen(QWidget):
             self.speed_label.setText(f"Speed: {s.wpm():.0f} WPM")
 
     def _show_result(self) -> None:
-        run, play = self._run, self._play
+        run, play = self._current()
         accuracy, wpm = run.accuracy(), run.wpm()
         stars = stars_for(accuracy, wpm, play.speed_goal)
         self.step_completed.emit(
@@ -209,8 +225,8 @@ class PracticeScreen(QWidget):
 
 
 class ResultDialog(QDialog):
-    MESSAGES = {3: "Amazing!", 2: "Great job!", 1: "Nice work!"}
-    SUBTEXT = {
+    MESSAGES: ClassVar[dict[int, str]] = {3: "Amazing!", 2: "Great job!", 1: "Nice work!"}
+    SUBTEXT: ClassVar[dict[int, str]] = {
         3: "Super careful typing. You're a typing hero!",
         2: "Really good! A little more practice and you'll get 3 stars.",
         1: "Practice makes perfect. Try again for more stars!",
@@ -228,15 +244,15 @@ class ResultDialog(QDialog):
             f'<span style="color:#ddd3bf">{"★" * (3 - stars)}</span>')
         star_label.setStyleSheet("font-size: 72px;")
         star_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title = QLabel(self.MESSAGES[stars], objectName="Title")
+        title = label(self.MESSAGES[stars], "Title")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        sub = QLabel(self.SUBTEXT[stars], objectName="Subtitle", wordWrap=True)
+        sub = label(self.SUBTEXT[stars], "Subtitle", wrap=True)
         sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
         oops = {0: "no oopses", 1: "1 oops"}.get(mistakes, f"{mistakes} oopses")
-        stats = QLabel(f"Accuracy {accuracy:.0f}%   ·   Speed {wpm:.0f} WPM   ·   {oops}",
-                       objectName="Stat")
+        stats = label(f"Accuracy {accuracy:.0f}%   ·   Speed {wpm:.0f} WPM   ·   {oops}",
+                      "Stat")
         stats.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        goal_label = QLabel(objectName="Stat")
+        goal_label = label("", "Stat")
         goal_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         if speed_goal:
             if wpm >= speed_goal:

@@ -123,7 +123,6 @@ class WpmChart(QWidget):
             value += step
 
         # X labels: only where the date changes, thinned so they never collide.
-        n = len(self._points)
         min_gap = plot.width() / MAX_X_LABELS
         last_right = -1e9
         last_x = -1e9

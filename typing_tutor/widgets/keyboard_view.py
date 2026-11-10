@@ -3,12 +3,13 @@ from __future__ import annotations
 
 import math
 
-from PySide6.QtCore import QElapsedTimer, QPointF, QRectF, QSize, Qt, QTimer
+from PySide6.QtCore import QElapsedTimer, QPointF, QRectF, QSize, Qt
 from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
 from ..keyboard import ROW_UNITS, ROWS, keys_for_char
 from ..theme import INK, finger_color, mix
+from ..ui import timer
 
 NEUTRAL_KEY = QColor("#ddd5c6")
 WRONG_KEY = QColor("#ff6b6b")
@@ -21,9 +22,8 @@ class KeyboardView(QWidget):
         self._wrong: str | None = None
         self._clock = QElapsedTimer()
         self._clock.start()
-        self._pulse_timer = QTimer(self, interval=33, timeout=self.update)
-        self._wrong_timer = QTimer(self, interval=400, singleShot=True,
-                                   timeout=self._clear_wrong)
+        self._pulse_timer = timer(self, 33, self.update)
+        self._wrong_timer = timer(self, 400, self._clear_wrong, single_shot=True)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         self.setMinimumSize(560, 190)
 

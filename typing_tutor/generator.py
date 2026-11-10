@@ -168,7 +168,7 @@ def _made_up_sentence(new: list[str], known: frozenset[str], rng: random.Random)
     """Strings of words for stages too early for the sentence bank."""
     focus, words = _word_pools(new, known)
     words = words or ["a"]
-    groups = []
+    groups: list[str] = []
     while sum(len(g) + 2 for g in groups) < LINE_LEN - 8:
         group = " ".join(rng.choice(words if rng.random() > 0.5 or not focus else focus)
                          for _ in range(rng.randint(2, 4)))

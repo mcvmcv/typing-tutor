@@ -6,14 +6,15 @@ import sys
 from PySide6.QtWidgets import QApplication, QDialog, QMainWindow, QStackedWidget
 
 from .game import game_words
+from .lessons import Lesson
 from .plays import known_keys, lesson_play, review_play
+from .screens.game_screen import GameScreen
 from .screens.menu import LessonMenuScreen
 from .screens.practice import PracticeScreen, StepResult
 from .screens.profiles import ProfileScreen, SettingsDialog
-from .screens.game_screen import GameScreen
 from .screens.progress_screen import ProgressScreen
 from .sounds import SoundPlayer
-from .storage import ProfileStore
+from .storage import Profile, ProfileStore
 from .theme import apply_theme
 
 
@@ -50,7 +51,15 @@ class MainWindow(QMainWindow):
         self.practice.menu_requested.connect(self.show_menu)
         self.practice.step_completed.connect(self._record)
         self.practice.sound_toggled.connect(
-            lambda on: self.store.set_sound(self.profile_id, on))
+            lambda on: self.store.set_sound(self.profile.id, on))
+
+    @property
+    def profile(self) -> Profile:
+        """The player currently using the app. Only valid after choose_profile()."""
+        profile = self.store.get(self.profile_id) if self.profile_id else None
+        if profile is None:
+            raise RuntimeError("no player chosen")
+        return profile
 
     def choose_profile(self, profile_id: str) -> None:
         self.profile_id = profile_id
@@ -58,49 +67,45 @@ class MainWindow(QMainWindow):
         self.show_menu()
 
     def _apply_sound_settings(self) -> None:
-        profile = self.store.get(self.profile_id)
-        if profile is not None:
-            self.sounds.enabled = profile.sound
-            self.sounds.key_clicks = profile.key_clicks
+        self.sounds.enabled = self.profile.sound
+        self.sounds.key_clicks = self.profile.key_clicks
 
     def show_profiles(self) -> None:
         self.profiles.refresh()
         self.stack.setCurrentWidget(self.profiles)
 
     def show_menu(self) -> None:
-        profile = self.store.get(self.profile_id)
-        if profile is None:
+        if self.profile_id is None or self.store.get(self.profile_id) is None:
             self.show_profiles()
             return
-        self.menu.set_profile(profile)
+        self.menu.set_profile(self.profile)
         self.stack.setCurrentWidget(self.menu)
 
-    def start_step(self, lesson, index: int) -> None:
-        profile = self.store.get(self.profile_id)
+    def start_step(self, lesson: Lesson, index: int) -> None:
         self.stack.setCurrentWidget(self.practice)
-        self.practice.start(lesson_play(lesson, index, profile))
+        self.practice.start(lesson_play(lesson, index, self.profile))
 
     def show_progress(self) -> None:
-        self.progress.set_profile(self.store.get(self.profile_id))
+        self.progress.set_profile(self.profile)
         self.stack.setCurrentWidget(self.progress)
 
     def show_game(self) -> None:
-        profile = self.store.get(self.profile_id)
+        profile = self.profile
         self.stack.setCurrentWidget(self.game)
         self.game.open(game_words(known_keys(profile)), profile.game_best)
 
     def _record_game(self, difficulty: str, score: int, key_stats: dict) -> tuple[bool, int]:
-        is_best = self.store.record_game(self.profile_id, difficulty, score, key_stats)
-        return is_best, self.store.get(self.profile_id).game_best.get(difficulty, 0)
+        is_best = self.store.record_game(self.profile.id, difficulty, score, key_stats)
+        return is_best, self.profile.game_best.get(difficulty, 0)
 
     def start_review(self) -> None:
-        play = review_play(self.store.get(self.profile_id))
+        play = review_play(self.profile)
         if play is not None:
             self.stack.setCurrentWidget(self.practice)
             self.practice.start(play)
 
     def open_settings(self) -> None:
-        profile = self.store.get(self.profile_id)
+        profile = self.profile
         dlg = SettingsDialog(profile, self)
         if dlg.exec() == QDialog.DialogCode.Accepted:
             self.store.set_speed_goal(profile.id, dlg.speed_goal())
@@ -109,11 +114,11 @@ class MainWindow(QMainWindow):
             self.menu.refresh()
 
     def _record(self, result: StepResult) -> None:
-        self.store.record_result(self.profile_id, result.step_id, result.wpm,
+        self.store.record_result(self.profile.id, result.step_id, result.wpm,
                                  result.accuracy, result.stars, result.key_stats)
 
 
-def main() -> int:
+def main() -> int:  # pragma: no cover - starts the real app
     app = QApplication(sys.argv)
     app.setApplicationName("learn-typing")
     apply_theme(app)

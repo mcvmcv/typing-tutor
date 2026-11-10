@@ -4,25 +4,36 @@ from __future__ import annotations
 from datetime import datetime
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import (QAbstractItemView, QButtonGroup, QFrame, QHBoxLayout,
-                               QHeaderView, QLabel, QPushButton, QTableWidget,
-                               QTableWidgetItem, QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (
+    QAbstractItemView,
+    QButtonGroup,
+    QFrame,
+    QHBoxLayout,
+    QHeaderView,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QVBoxLayout,
+    QWidget,
+)
 
 from ..progress import points_by_attempt, points_by_day, recent_attempts, step_title, summary
 from ..storage import Profile
+from ..ui import label
 from ..widgets.wpm_chart import WpmChart
 
 MIN_DAYS_FOR_DAY_VIEW = 3
 
 
 class Tile(QFrame):
-    def __init__(self, label: str, parent=None):
-        super().__init__(parent, objectName="Tile")
-        self.value = QLabel(objectName="TileValue")
+    def __init__(self, title: str, parent=None):
+        super().__init__(parent)
+        self.setObjectName("Tile")
+        self.value = label("", "TileValue")
         layout = QVBoxLayout(self)
         layout.setContentsMargins(18, 12, 18, 12)
         layout.setSpacing(2)
-        layout.addWidget(QLabel(label, objectName="Stat"))
+        layout.addWidget(label(title, "Stat"))
         layout.addWidget(self.value)
 
 
@@ -36,7 +47,7 @@ class ProgressScreen(QWidget):
         back = QPushButton("←  Lessons")
         back.setProperty("role", "secondary")
         back.clicked.connect(self.back_requested)
-        self.title = QLabel(objectName="Title")
+        self.title = label("", "Title")
         top = QHBoxLayout()
         top.addWidget(back)
         top.addSpacing(16)
@@ -53,8 +64,8 @@ class ProgressScreen(QWidget):
         for tile in (self.best, self.accuracy, self.stars, self.steps, self.days):
             tiles.addWidget(tile)
 
-        chart_title = QLabel("Typing speed", objectName="Heading")
-        self.chart_sub = QLabel(objectName="Subtitle")
+        chart_title = label("Typing speed", "Heading")
+        self.chart_sub = label("", "Subtitle")
         self.by_day = QPushButton("By day")
         self.by_attempt = QPushButton("Every step")
         self.mode = QButtonGroup(self)
@@ -74,7 +85,7 @@ class ProgressScreen(QWidget):
         chart_head.addWidget(self.by_attempt)
         self.chart = WpmChart()
 
-        recent_title = QLabel("Recent practice", objectName="Heading")
+        recent_title = label("Recent practice", "Heading")
         self.table = QTableWidget(0, 5)
         self.table.setHorizontalHeaderLabels(["When", "What", "Speed", "Accuracy", "Stars"])
         self.table.verticalHeader().setVisible(False)
@@ -100,6 +111,12 @@ class ProgressScreen(QWidget):
         layout.addWidget(recent_title)
         layout.addWidget(self.table, 2)
 
+    @property
+    def profile(self) -> Profile:
+        if self._profile is None:
+            raise RuntimeError("set_profile() must be called first")
+        return self._profile
+
     def set_profile(self, profile: Profile) -> None:
         self._profile = profile
         self.title.setText(f"{profile.name}'s progress")
@@ -117,7 +134,7 @@ class ProgressScreen(QWidget):
         self._fill_table()
 
     def _update_chart(self) -> None:
-        profile = self._profile
+        profile = self.profile
         goal = float(profile.speed_goal)
         if self.by_day.isChecked():
             points = points_by_day(profile)
@@ -128,7 +145,7 @@ class ProgressScreen(QWidget):
         self.chart.set_data(points, goal, "Finish a few steps to see your speed chart here!")
 
     def _fill_table(self) -> None:
-        rows = recent_attempts(self._profile)
+        rows = recent_attempts(self.profile)
         self.table.setRowCount(len(rows))
         for r, h in enumerate(rows):
             when = datetime.fromisoformat(h["when"])

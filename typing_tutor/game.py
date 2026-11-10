@@ -141,9 +141,11 @@ class GameState:
                     events.append(Event("over"))
                     break
         # Forget balloons whose pop or escape has finished animating.
-        self.balloons = [b for b in self.balloons
-                         if b.active or self.time - b.popped_at < 0.6]
+        self.balloons = [b for b in self.balloons if not self._finished_animating(b)]
         return events
+
+    def _finished_animating(self, b: Balloon) -> bool:
+        return b.popped_at is not None and self.time - b.popped_at >= 0.6
 
     # Typing -------------------------------------------------------------
 

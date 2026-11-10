@@ -4,7 +4,6 @@ from __future__ import annotations
 import time
 from enum import Enum
 
-
 MAX_KEY_GAP = 3.0   # seconds; slower keystrokes aren't counted toward key speed
 
 

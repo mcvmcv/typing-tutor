@@ -5,9 +5,8 @@ A friendly touch-typing tutor for kids, built with PySide6.
 ## Run
 
 ```bash
-source .venv/bin/activate
-pip install -r requirements.txt   # first time only
-python -m typing_tutor
+make install   # first time: creates .venv with the app and dev tools
+make run       # or: .venv/bin/python -m typing_tutor
 ```
 
 Progress is saved per player in `~/.local/share/learn-typing/profiles.json`.
@@ -71,3 +70,20 @@ overwritten.
 - `typing_tutor/storage.py` — player profiles and progress
 - `typing_tutor/widgets/` — on-screen keyboard, hands, typing line
 - `typing_tutor/screens/` — player picker, lesson menu, practice screen
+
+## Development
+
+```bash
+make check      # lint, format check, type check, tests with coverage (what CI runs)
+make test       # just the tests
+make format     # auto-format with ruff
+```
+
+- **Tests** live in `tests/` (pytest + pytest-qt). The GUI tests drive the real
+  screens offscreen with simulated key presses. Every test uses a temporary save
+  file and sound folder, so running them never touches real progress.
+- **Linting/formatting:** ruff. **Types:** mypy (config in `pyproject.toml`).
+- **CI:** `.github/workflows/ci.yml` runs `make check` on Python 3.11 and 3.13
+  once the repo is pushed to GitHub.
+- `typing_tutor/ui.py` has small widget helpers; use `label(text, name)` rather
+  than `QLabel(objectName=...)`, which PySide's type stubs reject.

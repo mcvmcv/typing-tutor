@@ -3,16 +3,25 @@ from __future__ import annotations
 
 import math
 import random
-from typing import Callable
+from collections.abc import Callable
 
 from PySide6.QtCore import QElapsedTimer, QEvent, QPointF, QRectF, Qt, QTimer, Signal
-from PySide6.QtGui import (QColor, QFont, QFontMetricsF, QLinearGradient, QPainter,
-                           QPainterPath, QPen, QRadialGradient)
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtGui import (
+    QColor,
+    QFont,
+    QFontMetricsF,
+    QLinearGradient,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QRadialGradient,
+)
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QPushButton, QVBoxLayout, QWidget
 
 from ..game import DIFFICULTIES, ESCAPE_Y, Balloon, Event, GameState
 from ..sounds import SoundPlayer
 from ..theme import BAD, INK, MUTED, mix
+from ..ui import label, timer
 
 BALLOON_COLORS = ("#ff6b6b", "#ffb347", "#ffd93d", "#6bcB77", "#4d96ff",
                   "#b37feb", "#ff8fc7", "#3cc6c0")
@@ -32,10 +41,11 @@ class GamePanel(QFrame):
     quit_requested = Signal()
 
     def __init__(self, parent=None):
-        super().__init__(parent, objectName="GamePanel")
-        self.title = QLabel(objectName="Title")
+        super().__init__(parent)
+        self.setObjectName("GamePanel")
+        self.title = label("", "Title")
         self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.message = QLabel(objectName="Instruction", wordWrap=True)
+        self.message = label("", "Instruction", wrap=True)
         self.message.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.message.setTextFormat(Qt.TextFormat.RichText)
 
@@ -113,7 +123,7 @@ class GameScreen(QWidget):
         self.panel.quit_requested.connect(self._quit)
 
         self._clock = QElapsedTimer()
-        self._timer = QTimer(self, interval=16, timeout=self._tick)
+        self._timer = timer(self, 16, self._tick)
 
     # Setup ----------------------------------------------------------------
 
@@ -199,13 +209,17 @@ class GameScreen(QWidget):
 
     def keyPressEvent(self, event) -> None:
         s = self.state
-        playing = s is not None and not s.over
+        if s is None or s.over:
+            super().keyPressEvent(event)
+            return
         if event.key() == Qt.Key.Key_Escape:
-            if playing:
-                self._resume() if self._paused else self._pause()
+            if self._paused:
+                self._resume()
+            else:
+                self._pause()
             return
         text = event.text()
-        if not playing or self._paused or event.isAutoRepeat() or len(text) != 1 \
+        if self._paused or event.isAutoRepeat() or len(text) != 1 \
                 or not text.isprintable() or text == " ":
             super().keyPressEvent(event)
             return
@@ -213,10 +227,10 @@ class GameScreen(QWidget):
 
     def changeEvent(self, event) -> None:
         # Pause automatically if the window loses focus mid-game.
-        if event.type() == QEvent.Type.ActivationChange and not self.isActiveWindow():
-            if self.state is not None and not self.state.over and not self._paused \
-                    and self.isVisible():
-                self._pause()
+        if (event.type() == QEvent.Type.ActivationChange and not self.isActiveWindow()
+                and self.state is not None and not self.state.over
+                and not self._paused and self.isVisible()):
+            self._pause()
         super().changeEvent(event)
 
     def _pause(self) -> None:
@@ -361,9 +375,7 @@ class GameScreen(QWidget):
 
     def _draw_pop(self, p: QPainter, b: Balloon, cx: float, cy: float, rx: float,
                   s: GameState) -> None:
-        age = s.time - b.popped_at
-        if age > POP_ANIM:
-            age = POP_ANIM
+        age = min(POP_ANIM, s.time - (b.popped_at or s.time))
         k = age / POP_ANIM
         alpha = int(255 * (1 - k))
         color = QColor(BALLOON_COLORS[b.color % len(BALLOON_COLORS)])

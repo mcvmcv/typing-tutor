@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QPointF, QRectF, QSize
-from PySide6.QtGui import QColor, QFont, QFontDatabase, QFontMetricsF, QPainter, QPen
+from PySide6.QtGui import QColor, QFontDatabase, QFontMetricsF, QPainter, QPen
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
 from ..session import CharState, TypingSession

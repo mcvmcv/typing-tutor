@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 import random
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 from .generator import build_lines, drill_line, words_line
 from .keyboard import char_name
@@ -82,7 +82,7 @@ def key_scores(profile: Profile) -> dict[str, float]:
 
 def weak_keys(profile: Profile, limit: int = 5) -> list[str]:
     scores = key_scores(profile)
-    ranked = sorted(scores, key=scores.get, reverse=True)
+    ranked = sorted(scores, key=lambda k: scores[k], reverse=True)
     return [k for k in ranked if scores[k] >= WEAK_THRESHOLD][:limit]
 
 
@@ -105,8 +105,9 @@ def review_play(profile: Profile) -> Play | None:
     if not weak:
         return None
     known = known_keys(profile)
-    names = [char_name(k) for k in weak]
-    names = names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+    key_names = [char_name(k) for k in weak]
+    names = key_names[0] if len(key_names) == 1 else (
+        ", ".join(key_names[:-1]) + " and " + key_names[-1])
     return Play(
         step_id=REVIEW_ID,
         title="Tricky keys",
