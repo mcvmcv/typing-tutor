@@ -2,6 +2,8 @@
 
 A friendly touch-typing tutor for kids, built with PySide6.
 
+**Website:** https://mcvmcv.github.io/typing-tutor/
+
 ## Download and play
 
 No Python needed. Download the app for your computer:
@@ -117,6 +119,7 @@ overwritten.
 - `typing_tutor/screens/` — player picker, lesson menu, practice screen
 - `typing_tutor/smoke.py` — `--smoke-test` self-check for built apps
 - `packaging/` — PyInstaller spec and release notes for the standalone apps
+- `docs/` — the website (GitHub Pages serves it from `main`)
 
 ## Development
 
