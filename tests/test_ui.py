@@ -304,20 +304,33 @@ def test_each_player_gets_their_own_space_dots(window, store, player):
     assert window.practice.typing.space_dots is True
 
 
-def test_typing_line_without_space_dots(qtbot):
+def test_typing_line_without_space_dots(qtbot, monkeypatch):
+    from PySide6.QtGui import QPainter
+
     from typing_tutor.session import TypingSession
     from typing_tutor.widgets.typing_view import TypingView
 
-    def draw(dots: bool, text: str):
+    drawn: list[str] = []
+    real = QPainter.drawText
+
+    def record(painter, *args):
+        drawn.append(args[-1])
+        return real(painter, *args)
+
+    monkeypatch.setattr(QPainter, "drawText", record)
+
+    def glyphs(dots: bool) -> str:
+        drawn.clear()
         view = TypingView()
         qtbot.addWidget(view)
         view.resize(600, 110)
         view.space_dots = dots
-        view.set_session(TypingSession(text))
-        return view.grab().toImage()
+        view.set_session(TypingSession("ab cd ef"))
+        view.grab()
+        return "".join(drawn)
 
-    assert draw(True, "ab cd ef") != draw(False, "ab cd ef")  # the dots are gone
-    assert draw(False, "ab cd ef") == draw(True, "ab\u00a0cd\u00a0ef")  # like blank space
+    assert glyphs(True) == "ab·cd·ef"
+    assert glyphs(False) == "abcdef"
 
 
 def test_creating_a_player_from_the_player_screen(monkeypatch, qtbot, store, played):
