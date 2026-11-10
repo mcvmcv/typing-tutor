@@ -217,3 +217,34 @@ def test_renaming_skips_names_already_used(store, player):
 def test_planning_changes_nothing(store, player):
     store.plan_import([Profile(id="new", name="Leo", color="#64b5f6")])
     assert [p.name for p in store.profiles] == ["Sam"]
+
+
+# Keyboard layout -----------------------------------------------------------
+
+
+def test_no_keyboard_chosen_by_default(store):
+    store.save()
+    assert store.keyboard is None
+    assert "keyboard" not in json.loads(store.path.read_text())
+
+
+def test_keyboard_choice_is_saved(store, tmp_path):
+    store.set_keyboard("uk")
+    assert ProfileStore(store.path).keyboard == "uk"
+
+
+def test_a_strange_keyboard_value_is_ignored(tmp_path):
+    path = tmp_path / "profiles.json"
+    path.write_text(json.dumps({"version": 1, "profiles": [], "keyboard": 5}))
+    assert ProfileStore(path).keyboard is None
+
+
+def test_backups_leave_the_keyboard_behind(store, player, tmp_path):
+    # The keyboard belongs to the computer, not the players.
+    store.set_keyboard("uk")
+    backup = tmp_path / "backup.json"
+    store.export_backup(backup)
+    assert "keyboard" not in json.loads(backup.read_text())
+    other = ProfileStore(tmp_path / "other.json")
+    other.import_profiles(read_backup(backup))
+    assert other.keyboard is None

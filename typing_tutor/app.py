@@ -8,6 +8,7 @@ from pathlib import Path
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QDialog, QMainWindow, QStackedWidget
 
+from . import keyboard
 from .game import game_words
 from .lessons import Lesson
 from .plays import known_keys, lesson_play, review_play
@@ -26,6 +27,7 @@ class MainWindow(QMainWindow):
     def __init__(self, store: ProfileStore, sound_folder: Path | None = None):
         super().__init__()
         self.store = store
+        keyboard.set_layout(store.keyboard or keyboard.system_layout())
         self.profile_id: str | None = None
         self._from_parents = False  # progress screen was opened from the grown-ups' view
         self.setWindowTitle("Learn Typing")

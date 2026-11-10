@@ -8,11 +8,13 @@ from PySide6.QtCore import QEvent, QPoint, Qt
 from PySide6.QtGui import QKeyEvent
 from PySide6.QtWidgets import QApplication, QDialog
 
+from typing_tutor import keyboard
 from typing_tutor.app import MainWindow
 from typing_tutor.lessons import ALL_STEPS, CAPITALS, HOME_ROW, TOP_ROW
 from typing_tutor.screens import practice as practice_module
 from typing_tutor.screens.profiles import NewPlayerDialog, SettingsDialog
 from typing_tutor.sounds import SoundPlayer
+from typing_tutor.widgets.keyboard_view import KeyboardView
 
 
 @pytest.fixture
@@ -332,3 +334,20 @@ def test_game_draws_pops_and_game_over(qtbot, window, store, player):
     for _ in range(3):
         game._tick()
     assert not game.grab().toImage().isNull()  # pop burst and points
+
+
+def test_keyboard_view_draws_the_uk_layout(qtbot):
+    keyboard.set_layout("uk")
+    view = KeyboardView()
+    qtbot.addWidget(view)
+    view.resize(960, 320)
+    view.set_target_char('"')
+    view.flash_wrong_char("#")
+    view.grab()  # paints
+    drawn = {key.ident: rect for key, rect in view.placed}
+    assert "enter-below" not in drawn  # the space under the tall Enter
+    assert drawn["#"].top() > drawn["enter"].top()  # # sits in the row below Enter's top
+    assert view._targets == {"2", "rshift"}
+    assert view._wrong == "#"
+    tall = view._shape(keyboard.UK.rows[1][-1], drawn["enter"], 60, 8)
+    assert tall.boundingRect().height() > drawn["enter"].height() * 1.5

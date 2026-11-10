@@ -9,6 +9,7 @@ from conftest import finish_steps, key_stat
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QFileDialog, QMessageBox
 
+from typing_tutor import keyboard
 from typing_tutor.app import MainWindow
 from typing_tutor.progress import overview
 from typing_tutor.screens.parents import STATS, import_summary, stat_values
@@ -233,3 +234,34 @@ def test_cancelling_the_load_dialog_does_nothing(window, monkeypatch, boxes):
 def test_import_summary_for_one_new_player():
     plan = ImportPlan(added=[Profile(id="a", name="Leo", color="#fff")], replaced=[], renamed={})
     assert import_summary(plan) == "New players: Leo.\n\nLoad the backup?"
+
+
+# Keyboard layout -----------------------------------------------------------
+
+
+def test_keyboard_buttons_show_the_current_layout(window):
+    window.show_parents()
+    assert window.parents.layout_buttons["us"].isChecked()
+    assert "@" in window.parents.layout_note.text()
+
+
+def test_choosing_uk_switches_and_remembers(qtbot, window, store):
+    window.show_parents()
+    qtbot.mouseClick(window.parents.layout_buttons["uk"], LEFT)
+    assert keyboard.current() is keyboard.UK
+    assert window.parents.layout_buttons["uk"].isChecked()
+    assert "# key" in window.parents.layout_note.text()
+    assert ProfileStore(store.path).keyboard == "uk"
+
+
+def test_the_window_starts_on_the_saved_keyboard(qtbot, store):
+    store.set_keyboard("uk")
+    qtbot.addWidget(MainWindow(store))
+    assert keyboard.current() is keyboard.UK
+
+
+def test_with_no_choice_the_window_guesses_from_the_region(qtbot, store, monkeypatch):
+    monkeypatch.setattr(keyboard, "system_layout", lambda: "uk")
+    qtbot.addWidget(MainWindow(store))
+    assert keyboard.current() is keyboard.UK
+    assert store.keyboard is None  # a guess, not a choice

@@ -8,6 +8,7 @@ from pathlib import Path
 from PySide6.QtCore import QStandardPaths, Qt, Signal
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
+    QButtonGroup,
     QFileDialog,
     QFrame,
     QGridLayout,
@@ -20,6 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from .. import keyboard
 from ..keyboard import fingers_for_char
 from ..progress import Overview, days_ago, overview
 from ..storage import BackupError, ImportPlan, Profile, ProfileStore, read_backup
@@ -195,11 +197,32 @@ class ParentScreen(QWidget):
             wrap=True,
         )
 
+        # The keyboard picture and finger hints follow this computer's layout.
+        self.layout_buttons: dict[str, QPushButton] = {}
+        self.layout_group = QButtonGroup(self)
+        keys_row = QHBoxLayout()
+        keys_row.setSpacing(8)
+        keys_row.addWidget(label("Keyboard:", "Heading"))
+        for kb in keyboard.LAYOUTS.values():
+            btn = QPushButton(kb.name)
+            btn.setCheckable(True)
+            btn.setProperty("role", "segment")
+            btn.setToolTip(kb.description)
+            btn.clicked.connect(lambda _=False, code=kb.code: self.choose_keyboard(code))
+            self.layout_group.addButton(btn)
+            self.layout_buttons[kb.code] = btn
+            keys_row.addWidget(btn)
+        keys_row.addSpacing(8)
+        self.layout_note = label("", "Subtitle")
+        keys_row.addWidget(self.layout_note)
+        keys_row.addStretch()
+
         layout = QVBoxLayout(self)
         layout.setContentsMargins(40, 24, 40, 24)
         layout.setSpacing(16)
         layout.addLayout(top)
         layout.addWidget(self.scroll_area, 1)
+        layout.addLayout(keys_row)
         layout.addWidget(note)
         self.cards: list[PlayerCard] = []
 
@@ -221,6 +244,19 @@ class ParentScreen(QWidget):
                 )
             )
         self.save_btn.setEnabled(bool(self.cards))
+        self._show_keyboard()
+
+    # Keyboard layout -----------------------------------------------------
+
+    def choose_keyboard(self, code: str) -> None:
+        keyboard.set_layout(code)
+        self.store.set_keyboard(code)
+        self._show_keyboard()
+
+    def _show_keyboard(self) -> None:
+        kb = keyboard.current()
+        self.layout_buttons[kb.code].setChecked(True)
+        self.layout_note.setText(kb.description)
 
     # Backups -------------------------------------------------------------
 
