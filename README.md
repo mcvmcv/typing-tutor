@@ -2,11 +2,35 @@
 
 A friendly touch-typing tutor for kids, built with PySide6.
 
-## Run
+## Install and play
+
+You need **Python 3.12 or newer** (check with `python3 --version`).
+
+**Just want to play?** Install it straight from GitHub with
+[pipx](https://pipx.pypa.io/), then start it:
 
 ```bash
-make install   # first time: creates .venv with the app and dev tools
-make run       # or: .venv/bin/python -m typing_tutor
+pipx install git+https://github.com/mcvmcv/typing-tutor.git
+learn-typing
+```
+
+**From a clone (Linux / macOS):**
+
+```bash
+git clone https://github.com/mcvmcv/typing-tutor.git
+cd typing-tutor
+make install   # first time only: creates .venv with the app and dev tools
+make run       # or: .venv/bin/learn-typing
+```
+
+**From a clone (Windows, no `make`):**
+
+```bat
+git clone https://github.com/mcvmcv/typing-tutor.git
+cd typing-tutor
+python -m venv .venv
+.venv\Scripts\pip install -e .
+.venv\Scripts\learn-typing
 ```
 
 Progress is saved per player in `~/.local/share/learn-typing/profiles.json`.
