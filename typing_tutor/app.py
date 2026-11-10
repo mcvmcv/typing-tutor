@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QDialog, QMainWindow, QStackedWidget
 
 from .game import game_words
@@ -152,9 +153,17 @@ class MainWindow(QMainWindow):
         )
 
 
+ICON = Path(__file__).parent / "assets" / "icon.png"
+
+
+def app_icon() -> QIcon:
+    return QIcon(str(ICON))
+
+
 def main() -> int:  # pragma: no cover - starts the real app
     app = QApplication(sys.argv)
     app.setApplicationName("learn-typing")
+    app.setWindowIcon(app_icon())
     apply_theme(app)
     if "--smoke-test" in sys.argv:
         from . import smoke

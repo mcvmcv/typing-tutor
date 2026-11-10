@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "learn-typing"
-version = "0.1.0"
+version = "0.2.0"
 description = "A friendly touch-typing tutor for kids"
 readme = "README.md"
 license = "MIT"
@@ -31,6 +31,9 @@ learn-typing = "typing_tutor.app:main"
 
 [tool.setuptools.packages.find]
 include = ["typing_tutor*"]
+
+[tool.setuptools.package-data]
+typing_tutor = ["assets/*.png"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

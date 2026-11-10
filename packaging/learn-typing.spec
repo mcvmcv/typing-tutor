@@ -16,6 +16,7 @@ MAC = sys.platform == "darwin"
 a = Analysis(
     [str(ROOT / "packaging" / "launch.py")],
     pathex=[str(ROOT)],  # find typing_tutor even when it's installed in editable mode
+    datas=[(str(ROOT / "typing_tutor" / "assets"), "typing_tutor/assets")],
     excludes=["tkinter"],
 )
 
@@ -46,6 +47,7 @@ if MAC:
         coll,
         name="Learn Typing.app",
         bundle_identifier="io.github.mcvmcv.typing-tutor",
+        icon=str(ROOT / "packaging" / "icon.icns"),
         info_plist={"NSHighResolutionCapable": True},
     )
 else:
@@ -57,4 +59,5 @@ else:
         name="LearnTyping",
         console=False,
         upx=False,
+        icon=str(ROOT / "packaging" / "icon.ico"),  # used on Windows; Linux ignores it
     )

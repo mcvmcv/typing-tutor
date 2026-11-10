@@ -48,7 +48,7 @@ def _plays(app: QApplication, effect: QSoundEffect, timeout: float = 3.0) -> boo
 
 
 def run(app: QApplication, timeout: float = 10.0) -> int:
-    from .app import MainWindow  # here, not at the top: app.py imports this module
+    from .app import MainWindow, app_icon  # here, not at the top: app.py imports this module
 
     with tempfile.TemporaryDirectory() as tmp:
         folder = Path(tmp)
@@ -74,6 +74,7 @@ def run(app: QApplication, timeout: float = 10.0) -> int:
         loaded = created and statuses.get("Ready", 0) == len(effects)
         played = has_output and loaded and _plays(app, effects[0])
         typed = line.pos
+        has_icon = not app_icon().isNull()  # the icon file made it into the build
         window.close()
 
     def verdict(ok: bool) -> str:
@@ -81,6 +82,7 @@ def run(app: QApplication, timeout: float = 10.0) -> int:
 
     report = [
         f"window:   ok (Qt platform: {app.platformName()})",
+        f"icon:     {'ok' if has_icon else 'FAILED'}",
         f"typing:   {'ok' if typed == 1 else 'FAILED'} (typed {typed} of 1 key)",
         f"sounds:   {'ok' if created else 'FAILED'} ({len(effects)} effects created)",
         f"loading:  {verdict(loaded)} ({dict(statuses)})",
@@ -88,7 +90,7 @@ def run(app: QApplication, timeout: float = 10.0) -> int:
     ]
     _show("\n".join(report))
     sound_ok = created and (played or not has_output)
-    return 0 if typed == 1 and sound_ok else 1
+    return 0 if typed == 1 and sound_ok and has_icon else 1
 
 
 def _show(text: str) -> None:
