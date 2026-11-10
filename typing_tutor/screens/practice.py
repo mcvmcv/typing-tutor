@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (QDialog, QHBoxLayout, QLabel, QProgressBar,
 from ..keyboard import char_name, finger_hint, fingers_for_char
 from ..plays import Play
 from ..session import StepRun, stars_for
+from ..sounds import SoundPlayer
 from ..theme import repolish
 from ..widgets.hands_view import HandsView
 from ..widgets.keyboard_view import KeyboardView
@@ -28,9 +29,11 @@ class StepResult:
 class PracticeScreen(QWidget):
     menu_requested = Signal()
     step_completed = Signal(object)  # StepResult
+    sound_toggled = Signal(bool)
 
-    def __init__(self, parent=None):
+    def __init__(self, sounds: SoundPlayer, parent=None):
         super().__init__(parent)
+        self.sounds = sounds
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self._play: Play | None = None
         self._run: StepRun | None = None
@@ -48,6 +51,12 @@ class PracticeScreen(QWidget):
         top.addWidget(self.title)
         top.addStretch()
         top.addWidget(self.step_count)
+        top.addSpacing(12)
+        self.sound_btn = QPushButton()
+        self.sound_btn.setProperty("role", "secondary")
+        self.sound_btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        self.sound_btn.clicked.connect(self._toggle_sound)
+        top.addWidget(self.sound_btn)
 
         self.instruction = QLabel(objectName="Instruction", wordWrap=True)
         self.typing = TypingView()
@@ -92,6 +101,7 @@ class PracticeScreen(QWidget):
         self.typing.set_session(self._run.current)
         self.progress.setRange(0, self._run.total_chars)
         self._set_hint(None)
+        self._update_sound_button()
         self._refresh()
         self._stats_timer.start()
         self.setFocus()
@@ -111,14 +121,18 @@ class PracticeScreen(QWidget):
         expected = s.expected
         if s.press(text):
             self._set_hint(None)
-            if s.finished:
+            if not s.finished:
+                self.sounds.play("click")
+            else:
                 if run.advance():
+                    self.sounds.play("line")
                     self.typing.set_session(run.current)
                 else:
                     self._finishing = True
                     self._stats_timer.stop()
                     QTimer.singleShot(350, self._show_result)
         else:
+            self.sounds.play("oops")
             self.keyboard.flash_wrong_char(text)
             if text.isalpha() and text.lower() == expected:
                 self._set_hint("Oops! Is Caps Lock on? Press Caps Lock to turn it off.")
@@ -129,6 +143,14 @@ class PracticeScreen(QWidget):
                 self._set_hint(f"Oops! That was {char_name(text)}. "
                                f"Try {char_name(expected)}.")
         self._refresh()
+
+    def _toggle_sound(self) -> None:
+        self.sounds.enabled = not self.sounds.enabled
+        self._update_sound_button()
+        self.sound_toggled.emit(self.sounds.enabled)
+
+    def _update_sound_button(self) -> None:
+        self.sound_btn.setText("Sound: on" if self.sounds.enabled else "Sound: off")
 
     def _set_hint(self, error: str | None) -> None:
         self._hint_error = error
@@ -173,6 +195,7 @@ class PracticeScreen(QWidget):
         self.step_completed.emit(
             StepResult(play.step_id, wpm, accuracy, stars, run.key_stats()))
 
+        self.sounds.stars(stars)
         upcoming = play.next_play() if play.next_play else None
         dlg = ResultDialog(stars, accuracy, wpm, run.mistakes, play.speed_goal,
                            has_next=upcoming is not None, parent=self)

@@ -29,6 +29,13 @@ Each player can have a speed goal (set when created, or via Settings). With a
 goal, 3 stars needs both 95%+ accuracy and the target speed (75% of it on
 key-drill steps). It's off by default, which suits young beginners.
 
+## Sounds
+
+Soft synthesised sound effects (key tick, gentle "oops", line chime, star
+fanfare) are generated on first run into `~/.cache/learn-typing/`. Each
+player can turn sounds or just key clicks off in Settings, or use the
+Sound button on the practice screen.
+
 ## Progress screen
 
 "My progress" on the lesson menu shows best speed, recent accuracy, stars,

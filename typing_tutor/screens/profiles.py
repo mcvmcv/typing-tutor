@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import (QButtonGroup, QComboBox, QDialog, QGridLayout, QHBoxLayout,
+from PySide6.QtWidgets import (QButtonGroup, QCheckBox, QComboBox, QDialog, QGridLayout, QHBoxLayout,
                                QLabel, QLineEdit, QMenu, QMessageBox, QPushButton,
                                QVBoxLayout, QWidget)
 
@@ -210,6 +210,14 @@ class SettingsDialog(QDialog):
         self.speed = SpeedGoalPicker(profile.speed_goal)
         help_text = QLabel(SPEED_HELP, objectName="Subtitle", wordWrap=True)
 
+        sound_heading = QLabel("Sounds", objectName="Heading")
+        self.sound = QCheckBox("Sound effects")
+        self.sound.setChecked(profile.sound)
+        self.clicks = QCheckBox("Click sound on every key")
+        self.clicks.setChecked(profile.key_clicks)
+        self.clicks.setEnabled(profile.sound)
+        self.sound.toggled.connect(self.clicks.setEnabled)
+
         ok = QPushButton("Save")
         ok.setDefault(True)
         ok.clicked.connect(self.accept)
@@ -226,8 +234,18 @@ class SettingsDialog(QDialog):
         layout.addWidget(heading)
         layout.addWidget(self.speed)
         layout.addWidget(help_text)
+        layout.addSpacing(12)
+        layout.addWidget(sound_heading)
+        layout.addWidget(self.sound)
+        layout.addWidget(self.clicks)
         layout.addSpacing(16)
         layout.addLayout(buttons)
 
     def speed_goal(self) -> int:
         return self.speed.goal()
+
+    def sound_on(self) -> bool:
+        return self.sound.isChecked()
+
+    def key_clicks_on(self) -> bool:
+        return self.clicks.isChecked()

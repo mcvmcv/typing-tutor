@@ -10,6 +10,7 @@ from .screens.menu import LessonMenuScreen
 from .screens.practice import PracticeScreen, StepResult
 from .screens.profiles import ProfileScreen, SettingsDialog
 from .screens.progress_screen import ProgressScreen
+from .sounds import SoundPlayer
 from .storage import ProfileStore
 from .theme import apply_theme
 
@@ -25,7 +26,8 @@ class MainWindow(QMainWindow):
 
         self.profiles = ProfileScreen(store)
         self.menu = LessonMenuScreen()
-        self.practice = PracticeScreen()
+        self.sounds = SoundPlayer(parent=self)
+        self.practice = PracticeScreen(self.sounds)
         self.progress = ProgressScreen()
         self.stack = QStackedWidget()
         for screen in (self.profiles, self.menu, self.practice, self.progress):
@@ -41,10 +43,19 @@ class MainWindow(QMainWindow):
         self.progress.back_requested.connect(self.show_menu)
         self.practice.menu_requested.connect(self.show_menu)
         self.practice.step_completed.connect(self._record)
+        self.practice.sound_toggled.connect(
+            lambda on: self.store.set_sound(self.profile_id, on))
 
     def choose_profile(self, profile_id: str) -> None:
         self.profile_id = profile_id
+        self._apply_sound_settings()
         self.show_menu()
+
+    def _apply_sound_settings(self) -> None:
+        profile = self.store.get(self.profile_id)
+        if profile is not None:
+            self.sounds.enabled = profile.sound
+            self.sounds.key_clicks = profile.key_clicks
 
     def show_profiles(self) -> None:
         self.profiles.refresh()
@@ -78,6 +89,8 @@ class MainWindow(QMainWindow):
         dlg = SettingsDialog(profile, self)
         if dlg.exec() == QDialog.DialogCode.Accepted:
             self.store.set_speed_goal(profile.id, dlg.speed_goal())
+            self.store.set_sound(profile.id, dlg.sound_on(), dlg.key_clicks_on())
+            self._apply_sound_settings()
             self.menu.refresh()
 
     def _record(self, result: StepResult) -> None:

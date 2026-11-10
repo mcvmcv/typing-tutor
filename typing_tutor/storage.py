@@ -30,6 +30,8 @@ class Profile:
     key_stats: dict[str, dict] = field(default_factory=dict)
     # Words per minute needed for full stars; 0 means accuracy only.
     speed_goal: int = 0
+    sound: bool = True
+    key_clicks: bool = True
 
     def stars(self, step_id: str) -> int:
         return self.best.get(step_id, {}).get("stars", 0)
@@ -92,6 +94,14 @@ class ProfileStore:
         profile = self.get(profile_id)
         if profile is not None:
             profile.speed_goal = goal
+            self.save()
+
+    def set_sound(self, profile_id: str, sound: bool, key_clicks: bool | None = None) -> None:
+        profile = self.get(profile_id)
+        if profile is not None:
+            profile.sound = sound
+            if key_clicks is not None:
+                profile.key_clicks = key_clicks
             self.save()
 
     def record_result(self, profile_id: str, step_id: str, wpm: float,

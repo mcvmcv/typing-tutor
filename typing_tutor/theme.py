@@ -76,6 +76,8 @@ QComboBox {{
     font-size: 17px; padding: 8px 12px; border: 2px solid #e0d5bd;
     border-radius: 10px; background: white;
 }}
+QCheckBox {{ font-size: 17px; spacing: 10px; }}
+QCheckBox::indicator {{ width: 22px; height: 22px; }}
 QFrame#Panel {{ background: #fff1cc; border-radius: 16px; }}
 QFrame#Tile {{ background: white; border: 2px solid #e8dcc2; border-radius: 16px; }}
 QLabel#TileValue {{ font-size: 26px; font-weight: bold; }}
