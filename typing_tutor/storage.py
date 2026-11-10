@@ -13,6 +13,95 @@ from PySide6.QtCore import QStandardPaths
 
 from .session import merge_key_stats
 
+BACKUP_FORMAT = "learn-typing-backup"
+
+
+class BackupError(Exception):
+    """The file isn't a Learn Typing backup that can be loaded. The message says why."""
+
+
+@dataclass
+class ImportPlan:
+    """What loading a backup would do."""
+
+    added: list[Profile]  # new players
+    replaced: list[Profile]  # players already here, whose progress the backup replaces
+    renamed: dict[str, str]  # new players renamed to avoid a clash: old name -> new name
+
+
+def _is_number(value: object) -> bool:
+    return isinstance(value, int | float) and not isinstance(value, bool)
+
+
+def _check_profile(data: object) -> None:
+    """Raise BackupError unless `data` looks like a saved player."""
+    if not isinstance(data, dict):
+        raise BackupError("A player in the file isn't in the right format.")
+    for key in ("id", "name", "color"):
+        if not isinstance(data.get(key), str) or not data[key].strip():
+            raise BackupError(f"A player in the file is missing their {key}.")
+    name = data["name"]
+    best, history = data.get("best", {}), data.get("history", [])
+    key_stats, game_best = data.get("key_stats", {}), data.get("game_best", {})
+    if not isinstance(best, dict) or not all(
+        isinstance(b, dict) and isinstance(b.get("stars"), int) for b in best.values()
+    ):
+        raise BackupError(f"{name}'s stars in the file aren't in the right format.")
+    history_keys = ("step", "wpm", "accuracy", "stars", "when")
+    if not isinstance(history, list) or not all(
+        isinstance(h, dict) and all(k in h for k in history_keys) for h in history
+    ):
+        raise BackupError(f"{name}'s practice history in the file isn't in the right format.")
+    try:
+        for h in history:
+            datetime.fromisoformat(h["when"])
+    except (TypeError, ValueError):
+        raise BackupError(f"{name}'s practice history has a date that can't be read.") from None
+    if not isinstance(key_stats, dict) or not all(
+        isinstance(v, dict) and all(_is_number(v.get(f)) for f in "hmtn")
+        for v in key_stats.values()
+    ):
+        raise BackupError(f"{name}'s key stats in the file aren't in the right format.")
+    if not isinstance(game_best, dict) or not all(_is_number(v) for v in game_best.values()):
+        raise BackupError(f"{name}'s Balloon Pop scores aren't in the right format.")
+
+
+def read_backup(path: Path) -> list[Profile]:
+    """Read and check a backup (or a copied profiles.json) without changing anything."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as e:
+        raise BackupError(f"The file couldn't be opened ({e.strerror or e}).") from None
+    except (UnicodeDecodeError, ValueError):
+        raise BackupError("This isn't a Learn Typing backup file.") from None
+    if not isinstance(data, dict) or not isinstance(data.get("profiles"), list):
+        raise BackupError("This isn't a Learn Typing backup file.")
+    version = data.get("version", 1)
+    if not isinstance(version, int):
+        raise BackupError("This isn't a Learn Typing backup file.")
+    if version > 1:
+        raise BackupError(
+            "This backup was made by a newer version of Learn Typing. "
+            "Update the app, then try again."
+        )
+    if not data["profiles"]:
+        raise BackupError("This backup doesn't have any players in it.")
+    for p in data["profiles"]:
+        _check_profile(p)
+    ids = [p["id"] for p in data["profiles"]]
+    if len(set(ids)) != len(ids):
+        raise BackupError("This backup has the same player in it twice.")
+    return [Profile.from_dict(p) for p in data["profiles"]]
+
+
+def _write_json(path: Path, payload: dict) -> None:
+    """Write atomically, so a crash never leaves half a file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    os.replace(tmp, path)
+
+
 # Once a key has this many samples, its stats are halved so recent typing
 # counts most and improvement shows up.
 KEY_STATS_WINDOW = 150
@@ -69,11 +158,48 @@ class ProfileStore:
             self.profiles = []
 
     def save(self) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        tmp = self.path.with_suffix(".tmp")
-        payload = {"version": 1, "profiles": [asdict(p) for p in self.profiles]}
-        tmp.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-        os.replace(tmp, self.path)
+        _write_json(self.path, {"version": 1, "profiles": [asdict(p) for p in self.profiles]})
+
+    # Backups -------------------------------------------------------------
+
+    def export_backup(self, path: Path) -> None:
+        _write_json(
+            path,
+            {
+                "format": BACKUP_FORMAT,
+                "version": 1,
+                "exported": datetime.now().isoformat(timespec="seconds"),
+                "profiles": [asdict(p) for p in self.profiles],
+            },
+        )
+
+    def plan_import(self, incoming: list[Profile]) -> ImportPlan:
+        plan = ImportPlan(added=[], replaced=[], renamed={})
+        names = {p.name.casefold() for p in self.profiles}
+        for profile in incoming:
+            if self.get(profile.id) is not None:
+                plan.replaced.append(profile)
+                continue
+            plan.added.append(profile)
+            if profile.name.casefold() in names:
+                n = 2
+                while f"{profile.name} {n}".casefold() in names:
+                    n += 1
+                plan.renamed[profile.name] = f"{profile.name} {n}"
+            names.add(plan.renamed.get(profile.name, profile.name).casefold())
+        return plan
+
+    def import_profiles(self, incoming: list[Profile]) -> ImportPlan:
+        """Add the backup's players, replacing any that are already here."""
+        plan = self.plan_import(incoming)
+        for profile in plan.replaced:
+            i = next(i for i, p in enumerate(self.profiles) if p.id == profile.id)
+            self.profiles[i] = profile
+        for profile in plan.added:
+            profile.name = plan.renamed.get(profile.name, profile.name)
+            self.profiles.append(profile)
+        self.save()
+        return plan
 
     def get(self, profile_id: str) -> Profile | None:
         return next((p for p in self.profiles if p.id == profile_id), None)

@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
+from pathlib import Path
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QStandardPaths, Qt, Signal
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
+    QFileDialog,
     QFrame,
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QMessageBox,
     QPushButton,
     QScrollArea,
     QVBoxLayout,
@@ -19,7 +22,7 @@ from PySide6.QtWidgets import (
 
 from ..keyboard import fingers_for_char
 from ..progress import Overview, days_ago, overview
-from ..storage import Profile, ProfileStore
+from ..storage import BackupError, ImportPlan, Profile, ProfileStore, read_backup
 from ..theme import INK, finger_color
 from ..ui import clear_layout, label
 from .menu import chip_text
@@ -58,6 +61,28 @@ def avatar(profile: Profile, size: int = 52) -> QLabel:
         f" font-size: {size // 2}px; font-weight: bold; border: 3px solid white;"
     )
     return dot
+
+
+def _names(names: list[str]) -> str:
+    return names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1]
+
+
+def import_summary(plan: ImportPlan) -> str:
+    """What loading a backup will do, for the confirmation question."""
+    lines = []
+    if plan.added:
+        added = [plan.renamed.get(p.name, p.name) for p in plan.added]
+        lines.append(f"New players: {_names(added)}.")
+    for old, new in plan.renamed.items():
+        lines.append(f"There's already a {old} here, so the one from the backup will be {new}.")
+    if plan.replaced:
+        names = _names([p.name for p in plan.replaced])
+        verb = "is" if len(plan.replaced) == 1 else "are"
+        lines.append(
+            f"{names} {verb} already here. Their progress will be replaced with the "
+            "backup's, which can't be undone."
+        )
+    return "\n\n".join([*lines, "Load the backup?"])
 
 
 class PlayerCard(QFrame):
@@ -139,6 +164,16 @@ class ParentScreen(QWidget):
         top.addSpacing(16)
         top.addLayout(titles)
         top.addStretch()
+        self.save_btn = QPushButton("Save a backup…")
+        self.save_btn.setProperty("role", "secondary")
+        self.save_btn.setToolTip("Save everyone's progress to a file, to keep safe or move")
+        self.save_btn.clicked.connect(self.save_backup)
+        self.load_btn = QPushButton("Load a backup…")
+        self.load_btn.setProperty("role", "secondary")
+        self.load_btn.setToolTip("Bring in players from a backup file, e.g. from another computer")
+        self.load_btn.clicked.connect(self.load_backup)
+        top.addWidget(self.save_btn, 0, Qt.AlignmentFlag.AlignTop)
+        top.addWidget(self.load_btn, 0, Qt.AlignmentFlag.AlignTop)
 
         self.cards_box = QVBoxLayout()
         self.cards_box.setSpacing(14)
@@ -177,4 +212,74 @@ class ParentScreen(QWidget):
             self.cards_box.addWidget(card)
             self.cards.append(card)
         if not self.cards:
-            self.cards_box.addWidget(label("No players yet.", "Subtitle"))
+            self.cards_box.addWidget(
+                label(
+                    "No players yet. Moving from another computer? "
+                    "Use \u201cLoad a backup\u2026\u201d to bring everyone's progress across.",
+                    "Subtitle",
+                    wrap=True,
+                )
+            )
+        self.save_btn.setEnabled(bool(self.cards))
+
+    # Backups -------------------------------------------------------------
+
+    def save_backup(self) -> None:
+        folder = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation)
+        suggested = Path(folder) / f"learn-typing-backup-{date.today().isoformat()}.json"
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Save a backup", str(suggested), "Learn Typing backup (*.json)"
+        )
+        if path:
+            self.export_to(Path(path))
+
+    def export_to(self, path: Path) -> bool:
+        try:
+            self.store.export_backup(path)
+        except OSError as e:
+            QMessageBox.warning(
+                self, "Backup not saved", f"The backup couldn't be saved:\n{e.strerror or e}"
+            )
+            return False
+        count = len(self.store.profiles)
+        players = "1 player" if count == 1 else f"{count} players"
+        QMessageBox.information(
+            self,
+            "Backup saved",
+            f"Saved {players} to:\n{path}\n\n"
+            "To move to another computer, copy this file across, then use "
+            "\u201cLoad a backup\u2026\u201d there.",
+        )
+        return True
+
+    def load_backup(self) -> None:
+        folder = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DocumentsLocation)
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Load a backup", folder, "Learn Typing backup (*.json);;All files (*)"
+        )
+        if path:
+            self.import_from(Path(path))
+
+    def import_from(self, path: Path) -> bool:
+        """Check a backup, ask before replacing anyone, then load it."""
+        try:
+            incoming = read_backup(path)
+        except BackupError as e:
+            QMessageBox.warning(self, "Can't load this backup", str(e))
+            return False
+        plan = self.store.plan_import(incoming)
+        if not self.confirm_import(plan):
+            return False
+        try:
+            self.store.import_profiles(incoming)
+        except OSError as e:
+            QMessageBox.warning(
+                self, "Backup not loaded", f"Progress couldn't be saved:\n{e.strerror or e}"
+            )
+            return False
+        self.refresh()
+        return True
+
+    def confirm_import(self, plan: ImportPlan) -> bool:
+        answer = QMessageBox.question(self, "Load this backup?", import_summary(plan))
+        return answer == QMessageBox.StandardButton.Yes

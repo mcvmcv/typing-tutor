@@ -7,10 +7,12 @@ from datetime import datetime
 import pytest
 from conftest import finish_steps, key_stat
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QFileDialog, QMessageBox
 
 from typing_tutor.app import MainWindow
 from typing_tutor.progress import overview
-from typing_tutor.screens.parents import STATS, stat_values
+from typing_tutor.screens.parents import STATS, import_summary, stat_values
+from typing_tutor.storage import ImportPlan, Profile, ProfileStore, read_backup
 
 NOW = datetime(2026, 11, 10, 18, 0)
 LEFT = Qt.MouseButton.LeftButton
@@ -30,14 +32,14 @@ def played(monkeypatch):
     monkeypatch.setattr("typing_tutor.sounds.SoundPlayer.play", lambda self, name: None)
 
 
-def test_button_only_shows_once_there_are_players(qtbot, store):
+def test_grown_ups_button_shows_even_with_no_players(qtbot, store):
+    # A fresh install on a new computer needs it to load a backup.
     w = MainWindow(store)
     qtbot.addWidget(w)
     w.show()
-    assert not w.profiles.parents_btn.isVisible()
-    store.add("Mia", "#f06292")
-    w.show_profiles()
     assert w.profiles.parents_btn.isVisible()
+    w.show_parents()
+    assert not w.parents.save_btn.isEnabled()
 
 
 def test_shows_a_card_for_each_player(qtbot, window, store, player):
@@ -107,3 +109,127 @@ def test_stat_values_line_up_with_headings(store, player):
     values = stat_values(overview(player, NOW), NOW)
     assert len(values) == len(STATS)
     assert values[STATS.index("This week")] in ("0 steps", "1 step")
+
+
+# Backups ---------------------------------------------------------------------
+
+
+class Boxes:
+    """Records message boxes instead of showing them, and answers questions."""
+
+    def __init__(self, monkeypatch, answer=QMessageBox.StandardButton.Yes):
+        self.shown: list[tuple[str, str, str]] = []
+        self.answer = answer
+        for kind in ("information", "warning"):
+            monkeypatch.setattr(QMessageBox, kind, self._recorder(kind))
+        monkeypatch.setattr(QMessageBox, "question", self._question)
+
+    def _recorder(self, kind):
+        def record(parent, title, text, *args):
+            self.shown.append((kind, title, text))
+            return QMessageBox.StandardButton.Ok
+
+        return record
+
+    def _question(self, parent, title, text, *args):
+        self.shown.append(("question", title, text))
+        return self.answer
+
+
+@pytest.fixture
+def boxes(monkeypatch):
+    return Boxes(monkeypatch)
+
+
+def test_save_a_backup(qtbot, window, store, player, tmp_path, monkeypatch, boxes):
+    target = tmp_path / "backup.json"
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *a, **k: (str(target), ""))
+    window.show_parents()
+    qtbot.mouseClick(window.parents.save_btn, LEFT)
+    assert read_backup(target) == store.profiles
+    kind, _, text = boxes.shown[-1]
+    assert kind == "information" and "1 player" in text and str(target) in text
+
+
+def test_cancelling_the_save_dialog_does_nothing(window, monkeypatch, boxes):
+    monkeypatch.setattr(QFileDialog, "getSaveFileName", lambda *a, **k: ("", ""))
+    window.show_parents()
+    window.parents.save_backup()
+    assert boxes.shown == []
+
+
+def test_a_failed_save_is_explained(window, tmp_path, boxes):
+    blocker = tmp_path / "file"
+    blocker.write_text("")
+    window.show_parents()
+    assert not window.parents.export_to(blocker / "backup.json")
+    assert boxes.shown[-1][:2] == ("warning", "Backup not saved")
+
+
+def make_backup(tmp_path, *names):
+    other = ProfileStore(tmp_path / "other.json")
+    for name in names:
+        other.add(name, "#64b5f6")
+    path = tmp_path / "backup.json"
+    other.export_backup(path)
+    return path
+
+
+def test_load_a_backup(qtbot, window, store, tmp_path, monkeypatch, boxes):
+    backup = make_backup(tmp_path, "Leo", "Sam")
+    monkeypatch.setattr(QFileDialog, "getOpenFileName", lambda *a, **k: (str(backup), ""))
+    window.show_parents()
+    qtbot.mouseClick(window.parents.load_btn, LEFT)
+    kind, _, question = boxes.shown[-1]
+    assert kind == "question"
+    assert "New players: Leo and Sam 2." in question
+    assert "already a Sam here" in question
+    assert [p.name for p in store.profiles] == ["Sam", "Leo", "Sam 2"]
+    assert len(window.parents.cards) == 3
+
+
+def test_saying_no_loads_nothing(window, store, tmp_path, monkeypatch):
+    Boxes(monkeypatch, answer=QMessageBox.StandardButton.No)
+    window.show_parents()
+    assert not window.parents.import_from(make_backup(tmp_path, "Leo"))
+    assert [p.name for p in store.profiles] == ["Sam"]
+
+
+def test_replacing_players_warns_first(window, store, player, tmp_path, boxes):
+    path = tmp_path / "mine.json"
+    store.export_backup(path)
+    window.show_parents()
+    assert window.parents.import_from(path)
+    question = boxes.shown[-1][2]
+    assert "Sam is already here" in question and "can't be undone" in question
+
+
+def test_a_bad_backup_is_explained(window, store, tmp_path, boxes):
+    path = tmp_path / "junk.json"
+    path.write_text("hello", encoding="utf-8")
+    window.show_parents()
+    assert not window.parents.import_from(path)
+    assert boxes.shown == [("warning", "Can't load this backup", boxes.shown[0][2])]
+    assert [p.name for p in store.profiles] == ["Sam"]
+
+
+def test_a_failed_import_save_is_explained(window, store, tmp_path, monkeypatch, boxes):
+    def fail(*args):
+        raise PermissionError(13, "Permission denied")
+
+    monkeypatch.setattr(store, "import_profiles", fail)
+    window.show_parents()
+    assert not window.parents.import_from(make_backup(tmp_path, "Leo"))
+    assert boxes.shown[-1][:2] == ("warning", "Backup not loaded")
+
+
+def test_cancelling_the_load_dialog_does_nothing(window, monkeypatch, boxes):
+    monkeypatch.setattr(QFileDialog, "getOpenFileName", lambda *a, **k: ("", ""))
+    window.show_parents()
+    window.parents.load_backup()
+    assert boxes.shown == []
+
+
+def test_import_summary_for_one_new_player():
+    plan = ImportPlan(added=[Profile(id="a", name="Leo", color="#fff")], replaced=[], renamed={})
+    assert import_summary(plan) == "New players: Leo.\n\nLoad the backup?"

@@ -109,7 +109,6 @@ class ProfileScreen(QWidget):
         has_profiles = bool(self.store.profiles)
         self.empty_hint.setVisible(not has_profiles)
         self.tip.setVisible(has_profiles)
-        self.parents_btn.setVisible(has_profiles)
 
     def _profile_button(self, profile: Profile) -> QPushButton:
         btn = QPushButton(profile.name)
