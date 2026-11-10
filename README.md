@@ -83,7 +83,7 @@ make format     # auto-format with ruff
   screens offscreen with simulated key presses. Every test uses a temporary save
   file and sound folder, so running them never touches real progress.
 - **Linting/formatting:** ruff. **Types:** mypy (config in `pyproject.toml`).
-- **CI:** `.github/workflows/ci.yml` runs `make check` on Python 3.11 and 3.13
+- **CI:** `.github/workflows/ci.yml` runs `make check` on Python 3.12 and 3.13
   once the repo is pushed to GitHub.
 - `typing_tutor/ui.py` has small widget helpers; use `label(text, name)` rather
   than `QLabel(objectName=...)`, which PySide's type stubs reject.

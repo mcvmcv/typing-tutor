@@ -1,2 +1,0 @@
-[console_scripts]
-learn-typing = typing_tutor.app:main
