@@ -56,6 +56,7 @@ SPEED_HELP = (
 
 class ProfileScreen(QWidget):
     profile_chosen = Signal(str)
+    parents_requested = Signal()
 
     def __init__(self, store: ProfileStore, parent=None):
         super().__init__(parent)
@@ -80,9 +81,14 @@ class ProfileScreen(QWidget):
         new_row.addWidget(new_btn)
         new_row.addStretch()
 
-        tip = label("Tip: right-click a player to remove them.", "Subtitle")
-        tip.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.tip = tip
+        self.tip = label("Tip: right-click a player to remove them.", "Subtitle")
+        self.parents_btn = QPushButton("For grown-ups")
+        self.parents_btn.setProperty("role", "secondary")
+        self.parents_btn.clicked.connect(self.parents_requested)
+        bottom = QHBoxLayout()
+        bottom.addWidget(self.tip)
+        bottom.addStretch()
+        bottom.addWidget(self.parents_btn)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(40, 50, 40, 30)
@@ -93,7 +99,7 @@ class ProfileScreen(QWidget):
         layout.addSpacing(30)
         layout.addLayout(new_row)
         layout.addStretch()
-        layout.addWidget(tip)
+        layout.addLayout(bottom)
         self.refresh()
 
     def refresh(self) -> None:
@@ -103,6 +109,7 @@ class ProfileScreen(QWidget):
         has_profiles = bool(self.store.profiles)
         self.empty_hint.setVisible(not has_profiles)
         self.tip.setVisible(has_profiles)
+        self.parents_btn.setVisible(has_profiles)
 
     def _profile_button(self, profile: Profile) -> QPushButton:
         btn = QPushButton(profile.name)

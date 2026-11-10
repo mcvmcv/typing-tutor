@@ -91,6 +91,7 @@ QFrame#GamePanel {{ background: white; border: 3px solid #e8dcc2; border-radius:
 QFrame#Panel {{ background: #fff1cc; border-radius: 16px; }}
 QFrame#Tile {{ background: white; border: 2px solid #e8dcc2; border-radius: 16px; }}
 QLabel#TileValue {{ font-size: 26px; font-weight: bold; }}
+QLabel#CardValue {{ font-size: 20px; font-weight: bold; }}
 QPushButton[role="segment"] {{ background: #efe6d2; font-size: 15px; padding: 6px 14px; }}
 QPushButton[role="segment"]:checked {{ background: #ffd166; }}
 QTableWidget {{
@@ -104,6 +105,10 @@ QHeaderView::section {{
 }}
 QLabel#Chip {{
     font-size: 20px; font-weight: bold; border-radius: 10px; padding: 4px 12px;
+    border: 2px solid {INK};
+}}
+QLabel#SmallChip {{
+    font-size: 15px; font-weight: bold; border-radius: 8px; padding: 1px 9px;
     border: 2px solid {INK};
 }}
 """

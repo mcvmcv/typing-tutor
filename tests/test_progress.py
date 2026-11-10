@@ -1,8 +1,13 @@
+from datetime import datetime
+
 import pytest
+from conftest import finish_steps, key_stat
 
 from typing_tutor.lessons import ALL_STEPS
 from typing_tutor.progress import (
     MAX_ATTEMPT_POINTS,
+    days_ago,
+    overview,
     points_by_attempt,
     points_by_day,
     recent_attempts,
@@ -69,3 +74,61 @@ def test_recent_attempts_are_newest_first(player):
 def test_step_titles():
     assert step_title("review") == "Tricky keys practice"
     assert step_title("unknown/step") == "unknown/step"
+
+
+# Grown-ups' overview ---------------------------------------------------------
+
+NOW = datetime(2026, 11, 10, 18, 0)
+
+
+def test_overview_of_a_new_player(player):
+    o = overview(player, NOW)
+    assert o.up_to == step_title(ALL_STEPS[0][0].step_id(0))
+    assert o.last_practised is None and o.steps_this_week == 0
+    assert o.tricky_keys is None and o.game_best == 0
+
+
+def test_overview_counts_this_weeks_steps_and_last_practice(player):
+    add_attempt(player, "home-row/fj", 10, 90, "2026-10-20T16:00:00")
+    add_attempt(player, "home-row/fj", 10, 90, "2026-11-05T16:00:00")
+    add_attempt(player, "home-row/dk", 10, 90, "2026-11-09T16:30:00")
+    player.game_best = {"easy": 300, "hard": 120}
+    o = overview(player, NOW)
+    assert o.steps_this_week == 2
+    assert o.last_practised == datetime(2026, 11, 9, 16, 30)
+    assert o.game_best == 300
+
+
+def test_overview_names_the_next_step(store, player):
+    finish_steps(store, player, 3)
+    lesson, i = ALL_STEPS[3]
+    assert overview(player, NOW).up_to == step_title(lesson.step_id(i))
+
+
+def test_overview_after_the_whole_course(store, player):
+    finish_steps(store, player, len(ALL_STEPS))
+    assert overview(player, NOW).up_to == "Finished the whole course!"
+
+
+def test_overview_tricky_keys(store, player):
+    finish_steps(store, player, 9)
+    player.key_stats = {c: key_stat(30) for c in "asdfghjl;"}
+    assert overview(player, NOW).tricky_keys == []
+    player.key_stats["k"] = key_stat(30, misses=10)
+    assert overview(player, NOW).tricky_keys == ["k"]
+
+
+@pytest.mark.parametrize(
+    ("when", "text"),
+    [
+        (None, "Not yet"),
+        (datetime(2026, 11, 10, 7, 0), "Today"),
+        (datetime(2026, 11, 9, 23, 59), "Yesterday"),
+        (datetime(2026, 11, 7, 12, 0), "3 days ago"),
+        (datetime(2026, 10, 20, 12, 0), "3 weeks ago"),
+        (datetime(2026, 8, 1, 12, 0), "1 Aug"),
+        (datetime(2025, 8, 1, 12, 0), "1 Aug 2025"),
+    ],
+)
+def test_days_ago(when, text):
+    assert days_ago(when, NOW) == text

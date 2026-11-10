@@ -12,6 +12,7 @@ from .lessons import Lesson
 from .plays import known_keys, lesson_play, review_play
 from .screens.game_screen import GameScreen
 from .screens.menu import LessonMenuScreen
+from .screens.parents import ParentScreen
 from .screens.practice import PracticeScreen, StepResult
 from .screens.profiles import ProfileScreen, SettingsDialog
 from .screens.progress_screen import ProgressScreen
@@ -25,6 +26,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.store = store
         self.profile_id: str | None = None
+        self._from_parents = False  # progress screen was opened from the grown-ups' view
         self.setWindowTitle("Learn Typing")
         self.resize(1150, 820)
         self.setMinimumSize(900, 680)
@@ -34,10 +36,12 @@ class MainWindow(QMainWindow):
         self.sounds = SoundPlayer(sound_folder, parent=self)
         self.practice = PracticeScreen(self.sounds)
         self.progress = ProgressScreen()
+        self.parents = ParentScreen(store)
         self.game = GameScreen(self.sounds)
         self.game.record_game = self._record_game
         self.stack = QStackedWidget()
-        for screen in (self.profiles, self.menu, self.practice, self.progress, self.game):
+        screens = (self.profiles, self.menu, self.practice, self.progress, self.game, self.parents)
+        for screen in screens:
             self.stack.addWidget(screen)
         self.setCentralWidget(self.stack)
 
@@ -47,7 +51,10 @@ class MainWindow(QMainWindow):
         self.menu.review_requested.connect(self.start_review)
         self.menu.settings_requested.connect(self.open_settings)
         self.menu.progress_requested.connect(self.show_progress)
-        self.progress.back_requested.connect(self.show_menu)
+        self.progress.back_requested.connect(self._progress_back)
+        self.profiles.parents_requested.connect(self.show_parents)
+        self.parents.back_requested.connect(self.show_profiles)
+        self.parents.details_requested.connect(self.show_player_progress)
         self.menu.game_requested.connect(self.show_game)
         self.game.menu_requested.connect(self.show_menu)
         self.practice.menu_requested.connect(self.show_menu)
@@ -88,7 +95,27 @@ class MainWindow(QMainWindow):
 
     def show_progress(self) -> None:
         self.progress.set_profile(self.profile)
+        self._from_parents = False
         self.stack.setCurrentWidget(self.progress)
+
+    def show_parents(self) -> None:
+        self.parents.refresh()
+        self.stack.setCurrentWidget(self.parents)
+
+    def show_player_progress(self, profile_id: str) -> None:
+        """A player's progress opened from the grown-ups' view (doesn't switch player)."""
+        profile = self.store.get(profile_id)
+        if profile is None:
+            return
+        self.progress.set_profile(profile, back_text="←  Grown-ups")
+        self._from_parents = True
+        self.stack.setCurrentWidget(self.progress)
+
+    def _progress_back(self) -> None:
+        if self._from_parents:
+            self.show_parents()
+        else:
+            self.show_menu()
 
     def show_game(self) -> None:
         profile = self.profile
