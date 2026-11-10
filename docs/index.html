@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Learn Typing: a friendly touch-typing tutor for kids</title>
+<meta name="description" content="Free touch-typing lessons for kids, with finger-by-finger guidance, a balloon-popping game and progress charts. Works offline on Windows, Mac and Linux.">
+<meta name="color-scheme" content="light">
+<style>
+  :root {
+    --bg: #fff8e7;
+    --card: #ffffff;
+    --ink: #2b2b2b;
+    --muted: #6f6556;
+    --line: #e9dfc8;
+    --button: #ffd166;
+    --button-hover: #ffc233;
+    --button-2: #efe6d2;
+    --good: #2e9e48;
+    --bad: #e74c3c;
+    --pinky: #f8a5c2;
+    --ring: #ffcf7a;
+    --middle: #9be7a0;
+    --pointer: #8ec5ff;
+    --thumb: #cdb4ff;
+    --round: ui-rounded, "SF Pro Rounded", "Nunito", "Segoe UI", system-ui, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 18px/1.55 var(--round);
+  }
+  a { color: inherit; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+
+  header.top { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; text-decoration: none; }
+  .brand .dot { width: 28px; height: 28px; border-radius: 9px; background: var(--button); display: grid; place-items: center; font-size: 15px; }
+  .top nav a { margin-left: 18px; color: var(--muted); text-decoration: none; font-size: 16px; }
+  .top nav a:hover { color: var(--ink); }
+
+  .hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 48px; align-items: center; padding: 36px 0 56px; }
+  h1 { font-size: clamp(38px, 6vw, 60px); line-height: 1.05; margin: 0 0 18px; letter-spacing: -0.02em; }
+  h1 .hl { background: linear-gradient(transparent 62%, var(--ring) 62%); padding: 0 4px; }
+  .lede { font-size: 21px; color: var(--muted); margin: 0 0 28px; max-width: 32em; }
+  .facts { display: flex; flex-wrap: wrap; gap: 8px; margin: 22px 0 0; padding: 0; list-style: none; }
+  .facts li { background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; font-size: 15px; color: var(--muted); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px; border: 0; cursor: pointer;
+    background: var(--button); color: var(--ink); text-decoration: none;
+    font: 700 18px/1 var(--round); padding: 16px 24px; border-radius: 16px;
+    transition: background .15s, transform .15s;
+  }
+  .btn:hover { background: var(--button-hover); transform: translateY(-1px); }
+  .btn small { font-weight: 600; opacity: .7; font-size: 14px; }
+  .btn.secondary { background: var(--button-2); }
+  .btn.secondary:hover { background: #e5d9bf; }
+  .download-row { display: flex; flex-wrap: wrap; gap: 10px; }
+  .other { margin-top: 14px; font-size: 15px; color: var(--muted); }
+
+  /* The try-it demo */
+  .demo {
+    background: var(--card); border: 1px solid var(--line); border-radius: 24px;
+    padding: 22px; box-shadow: 0 12px 30px -18px rgba(90, 70, 30, .35);
+  }
+  .demo-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+  .demo-title { font-weight: 800; }
+  .demo-status { font-size: 14px; color: var(--muted); }
+  .line {
+    font: 600 30px/1 var(--mono); letter-spacing: .06em; padding: 18px 16px;
+    background: #fffdf6; border: 2px solid var(--line); border-radius: 14px;
+    white-space: nowrap; overflow: hidden; outline: none; cursor: text;
+  }
+  .line:focus { border-color: var(--pointer); }
+  .line span { position: relative; color: #b8ad98; }
+  .line span.ok { color: var(--good); }
+  .line span.bad { color: var(--bad); }
+  .line span.cur { color: var(--ink); }
+  .line span.cur::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 4px;
+    border-radius: 2px; background: var(--ink); animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .hint { min-height: 1.5em; margin: 12px 2px 14px; font-size: 16px; font-weight: 700; }
+
+  .kb { display: grid; gap: 5px; user-select: none; }
+  .kb-row { display: flex; gap: 5px; }
+  .key {
+    flex: 1 1 0; aspect-ratio: 1; min-width: 0; border-radius: 9px; display: grid; place-items: center;
+    font: 700 15px/1 var(--round); color: #4b4336; border-bottom: 3px solid rgba(0,0,0,.12);
+    transition: transform .08s, box-shadow .15s, filter .15s;
+  }
+  .key.home::after { content: ""; position: absolute; }
+  .key.dim { filter: saturate(.25) brightness(1.08); opacity: .55; }
+  .key.next { box-shadow: 0 0 0 3px var(--ink); transform: translateY(-2px); filter: none; opacity: 1; }
+  .key.pressed { transform: translateY(2px); border-bottom-width: 1px; }
+  .kb-row:nth-child(2) { padding-left: 4%; }
+  .kb-row:nth-child(3) { padding-left: 9%; padding-right: 3%; }
+  .p { background: var(--pinky); } .r { background: var(--ring); }
+  .m { background: var(--middle); } .i { background: var(--pointer); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 14px; font-size: 13px; color: var(--muted); }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 4px; margin-right: 5px; vertical-align: -1px; }
+
+  section { padding: 56px 0; }
+  section + section { border-top: 1px solid var(--line); }
+  h2 { font-size: clamp(28px, 4vw, 38px); line-height: 1.15; margin: 0 0 10px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0 0 32px; max-width: 40em; }
+
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .feature { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 22px; }
+  .feature .icon { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; font-size: 22px; margin-bottom: 12px; }
+  .feature h3 { margin: 0 0 6px; font-size: 19px; }
+  .feature p { margin: 0; color: var(--muted); font-size: 16px; }
+
+  .course { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; counter-reset: lesson; }
+  .lesson { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px 14px; counter-increment: lesson; }
+  .lesson::before { content: counter(lesson); display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; font-weight: 800; font-size: 14px; margin-bottom: 10px; background: var(--c); }
+  .lesson b { display: block; font-size: 16px; line-height: 1.25; margin-bottom: 4px; }
+  .lesson span { font-size: 14px; color: var(--muted); }
+
+  .shots { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+  .shots figure { margin: 0; }
+  .shots img { width: 100%; height: auto; display: block; border-radius: 16px; border: 1px solid var(--line); box-shadow: 0 10px 26px -18px rgba(90,70,30,.45); }
+  .shots figcaption { font-size: 15px; color: var(--muted); margin-top: 8px; }
+
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .step { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 22px; }
+  .step h3 { margin: 0 0 6px; font-size: 18px; }
+  .step p { margin: 0; color: var(--muted); font-size: 16px; }
+  .step code { font: 14px var(--mono); background: var(--bg); padding: 2px 6px; border-radius: 6px; }
+  .note { margin-top: 20px; background: #fff1c9; border-radius: 16px; padding: 16px 20px; font-size: 16px; }
+
+  footer { padding: 36px 0 48px; color: var(--muted); font-size: 15px; border-top: 1px solid var(--line); }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 8px 24px; justify-content: space-between; }
+
+  @media (max-width: 880px) {
+    .hero { grid-template-columns: 1fr; gap: 32px; padding-top: 16px; }
+    .features, .steps { grid-template-columns: 1fr 1fr; }
+    .course { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 600px) {
+    body { font-size: 17px; }
+    .wrap { padding: 0 16px; }
+    .top nav { display: none; }
+    .lede { font-size: 19px; }
+    .features, .steps, .shots { grid-template-columns: 1fr; }
+    .course { grid-template-columns: repeat(2, 1fr); }
+    .line { font-size: 24px; }
+    .key { font-size: 12px; border-radius: 7px; }
+    .btn { width: 100%; justify-content: center; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="#"><span class="dot" aria-hidden="true">⌨</span> Learn Typing</a>
+    <nav>
+      <a href="#features">What's inside</a>
+      <a href="#download">Download</a>
+      <a href="https://github.com/mcvmcv/typing-tutor">GitHub</a>
+    </nav>
+  </header>
+
+  <div class="hero">
+    <div>
+      <h1>Typing lessons kids <span class="hl">actually enjoy</span></h1>
+      <p class="lede">Learn Typing teaches touch typing one key at a time, showing which finger to use for every letter. Short lessons, gold stars, and a balloon-popping game.</p>
+      <div class="download-row" id="primary-download"></div>
+      <p class="other">Free and open source. No account, no ads, works offline. <a href="#download">All downloads</a></p>
+      <ul class="facts" aria-label="At a glance">
+        <li>40 steps in 6 lessons</li>
+        <li>Windows · Mac · Linux</li>
+        <li>Progress for each child</li>
+      </ul>
+    </div>
+
+    <div class="demo" aria-label="Try the home row">
+      <div class="demo-top">
+        <span class="demo-title">Try it: the home row</span>
+        <span class="demo-status" id="status">Click below, then type</span>
+      </div>
+      <div class="line" id="line" tabindex="0" role="textbox" aria-label="Typing practice line"></div>
+      <div class="hint" id="hint" aria-live="polite">&nbsp;</div>
+      <div class="kb" id="kb" aria-hidden="true"></div>
+      <div class="legend" aria-hidden="true">
+        <span><i class="p"></i>pinky</span><span><i class="r"></i>ring</span>
+        <span><i class="m"></i>middle</span><span><i class="i"></i>pointer</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section id="features">
+  <div class="wrap">
+    <h2>Everything a beginner needs</h2>
+    <p class="sub">Inspired by the classic typing tutors, built for today's kids. Practice lines are made fresh every time, using only the keys learned so far.</p>
+    <div class="features">
+      <div class="feature">
+        <div class="icon" style="background:var(--pointer)">☝️</div>
+        <h3>Right finger, every key</h3>
+        <p>A colour-coded keyboard and hands show which finger presses the next key, so good habits start on day one.</p>
+      </div>
+      <div class="feature">
+        <div class="icon" style="background:var(--ring)">⭐</div>
+        <h3>Small steps, gold stars</h3>
+        <p>Each step is a few short lines. Accuracy earns up to three stars, and the next step unlocks as you go.</p>
+      </div>
+      <div class="feature">
+        <div class="icon" style="background:var(--pinky)">🎈</div>
+        <h3>Balloon Pop</h3>
+        <p>Type the word on a balloon to pop it before it floats away. It only uses keys you've learned.</p>
+      </div>
+      <div class="feature">
+        <div class="icon" style="background:var(--middle)">🎯</div>
+        <h3>Tricky keys practice</h3>
+        <p>It notices which keys are slow or often missed and builds a focused drill for exactly those.</p>
+      </div>
+      <div class="feature">
+        <div class="icon" style="background:var(--thumb)">📈</div>
+        <h3>Progress you can see</h3>
+        <p>A speed chart, stars earned and practice days for each child, with an optional speed goal for older learners.</p>
+      </div>
+      <div class="feature">
+        <div class="icon" style="background:#ffe0b2">🔒</div>
+        <h3>Private by design</h3>
+        <p>No accounts and no internet needed. Progress stays on your computer, and nothing is sent anywhere.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="course">
+  <div class="wrap">
+    <h2>The course</h2>
+    <p class="sub">From the first <b>f</b> and <b>j</b> to typing whole stories, with capitals, punctuation and numbers along the way.</p>
+    <div class="course">
+      <div class="lesson" style="--c:var(--pinky)"><b>Home Row Heroes</b><span>a s d f j k l ;</span></div>
+      <div class="lesson" style="--c:var(--ring)"><b>Top Row Climbers</b><span>q w e r t y u i o p</span></div>
+      <div class="lesson" style="--c:var(--middle)"><b>Bottom Row Divers</b><span>z x c v b n m , .</span></div>
+      <div class="lesson" style="--c:var(--pointer)"><b>Big Letters</b><span>Shift, ' and ?</span></div>
+      <div class="lesson" style="--c:var(--thumb)"><b>Number Row</b><span>1 2 3 4 5 6 7 8 9 0</span></div>
+      <div class="lesson" style="--c:#ffe0b2"><b>Story Time</b><span>Real sentences and stories</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- SCREENSHOTS -->
+
+<section id="download">
+  <div class="wrap">
+    <h2>Download</h2>
+    <p class="sub">No installer and no Python needed. Download the file for your computer and open it.</p>
+    <div class="steps">
+      <div class="step">
+        <h3>Windows 10 or 11</h3>
+        <p><a class="btn" href="https://github.com/mcvmcv/typing-tutor/releases/latest/download/LearnTyping-windows.exe">Download for Windows</a></p>
+        <p style="margin-top:12px">Double-click <code>LearnTyping-windows.exe</code>. If you see "Windows protected your PC", click <b>More info</b>, then <b>Run anyway</b>.</p>
+      </div>
+      <div class="step">
+        <h3>Mac</h3>
+        <p class="download-row">
+          <a class="btn" href="https://github.com/mcvmcv/typing-tutor/releases/latest/download/LearnTyping-macos-apple-silicon.zip">Apple chip <small>M1 or newer</small></a>
+          <a class="btn secondary" href="https://github.com/mcvmcv/typing-tutor/releases/latest/download/LearnTyping-macos-intel.zip">Intel</a>
+        </p>
+        <p style="margin-top:12px">Unzip and open <b>Learn Typing</b>. If macOS says it "could not verify" the app, open <b>System Settings → Privacy &amp; Security</b> and click <b>Open Anyway</b>. Not sure which chip? Apple menu → <b>About This Mac</b>.</p>
+      </div>
+      <div class="step">
+        <h3>Linux</h3>
+        <p><a class="btn" href="https://github.com/mcvmcv/typing-tutor/releases/latest/download/LearnTyping-linux.tar.gz">Download for Linux</a></p>
+        <p style="margin-top:12px">Extract it and run <code>./LearnTyping</code>. 64-bit, Ubuntu 22.04 or newer (or similar).</p>
+      </div>
+    </div>
+    <p class="note">Why the warning? The app isn't signed with a paid Apple or Microsoft developer certificate, so your computer can't vouch for it. You only need to allow it once. The <a href="https://github.com/mcvmcv/typing-tutor">source code</a> is public if you'd like to check it, or run it with Python instead.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>Learn Typing is free and open source under the <a href="https://github.com/mcvmcv/typing-tutor/blob/main/LICENSE">MIT license</a>.</span>
+    <span><a href="https://github.com/mcvmcv/typing-tutor">Source on GitHub</a> · <a href="https://github.com/mcvmcv/typing-tutor/releases">All releases</a> · <a href="https://github.com/mcvmcv/typing-tutor/issues">Report a problem</a></span>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const BASE = "https://github.com/mcvmcv/typing-tutor/releases/latest/download/";
+
+  // Primary download button for the visitor's computer.
+  const ua = navigator.userAgent;
+  const platform = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(ua) || (navigator.maxTouchPoints > 1 && /Mac/.test(platform));
+  const box = document.getElementById("primary-download");
+  const button = (href, label, extra, cls) =>
+    `<a class="btn ${cls || ""}" href="${href}">${label}${extra ? ` <small>${extra}</small>` : ""}</a>`;
+  if (isMobile) {
+    box.innerHTML = button("#download", "Get it for your computer", "Windows, Mac, Linux");
+  } else if (/Win/i.test(platform)) {
+    box.innerHTML = button(BASE + "LearnTyping-windows.exe", "Download for Windows", "free");
+  } else if (/Mac/i.test(platform)) {
+    box.innerHTML = button(BASE + "LearnTyping-macos-apple-silicon.zip", "Download for Mac", "Apple chip") +
+      button(BASE + "LearnTyping-macos-intel.zip", "Intel Mac", "", "secondary");
+  } else if (/Linux/i.test(platform)) {
+    box.innerHTML = button(BASE + "LearnTyping-linux.tar.gz", "Download for Linux", "64-bit");
+  } else {
+    box.innerHTML = button("#download", "Download", "Windows, Mac, Linux");
+  }
+
+  // The try-it demo: a home row line, with the next key and finger highlighted.
+  const ROWS = ["qwertyuiop", "asdfghjkl;", "zxcvbnm,./"];
+  const FINGER = { q:"p",a:"p",z:"p",p:"p",";":"p","/":"p", w:"r",s:"r",x:"r",o:"r",l:"r",".":"r",
+                   e:"m",d:"m",c:"m",i:"m",k:"m",",":"m" };
+  const NAMES = { p: "pinky", r: "ring finger", m: "middle finger", i: "pointer finger" };
+  const LEFT = new Set("qwertasdfgzxcvb");
+  const HOME = new Set("asdfjkl;");
+  const LINES = ["fj fj jf jf", "dk kd fd jk", "sl ls dkfj", "a; ;a sad lad", "ask a lad", "dad falls"];
+  const fingerOf = c => FINGER[c] || "i";
+
+  const kb = document.getElementById("kb");
+  const keys = {};
+  for (const row of ROWS) {
+    const r = document.createElement("div");
+    r.className = "kb-row";
+    for (const c of row) {
+      const k = document.createElement("div");
+      k.className = "key " + fingerOf(c) + (HOME.has(c) ? "" : " dim");
+      k.textContent = c;
+      keys[c] = k;
+      r.appendChild(k);
+    }
+    kb.appendChild(r);
+  }
+
+  const lineEl = document.getElementById("line");
+  const hintEl = document.getElementById("hint");
+  const statusEl = document.getElementById("status");
+  let lineIndex = 0, pos = 0, mistakes = 0, total = 0, spans = [];
+
+  function hintFor(c) {
+    if (c === " ") return "Space: tap it with a thumb.";
+    const hand = LEFT.has(c) ? "left" : "right";
+    return `Next: ${c}, with your ${hand} ${NAMES[fingerOf(c)]}.`;
+  }
+
+  function show() {
+    const text = LINES[lineIndex];
+    lineEl.innerHTML = "";
+    spans = [...text].map(ch => {
+      const s = document.createElement("span");
+      s.textContent = ch === " " ? " " : ch;
+      lineEl.appendChild(s);
+      return s;
+    });
+    pos = 0;
+    mark();
+  }
+
+  function mark() {
+    const text = LINES[lineIndex];
+    spans.forEach((s, i) => s.classList.toggle("cur", i === pos));
+    Object.values(keys).forEach(k => k.classList.remove("next"));
+    const c = text[pos];
+    if (c && keys[c]) keys[c].classList.add("next");
+    hintEl.textContent = document.activeElement === lineEl ? hintFor(c) : " ";
+  }
+
+  function press(ch) {
+    const text = LINES[lineIndex];
+    const expected = text[pos];
+    total++;
+    const k = keys[ch.toLowerCase()];
+    if (k) { k.classList.add("pressed"); setTimeout(() => k.classList.remove("pressed"), 110); }
+    if (ch === expected) {
+      if (!spans[pos].classList.contains("bad")) spans[pos].classList.add("ok");
+      pos++;
+      if (pos === text.length) {
+        const acc = Math.round(100 * (total - mistakes) / total);
+        const stars = acc >= 95 ? "⭐⭐⭐" : acc >= 85 ? "⭐⭐" : "⭐";
+        statusEl.textContent = `${stars} ${acc}% accurate`;
+        lineIndex = (lineIndex + 1) % LINES.length;
+        mistakes = 0; total = 0;
+        setTimeout(show, 450);
+        return;
+      }
+    } else {
+      mistakes++;
+      spans[pos].classList.add("bad");
+      hintEl.textContent = `Oops! Try ${expected === " " ? "Space" : expected}.`;
+      return;
+    }
+    mark();
+  }
+
+  lineEl.addEventListener("keydown", e => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key.length === 1) { e.preventDefault(); press(e.key); }
+  });
+  lineEl.addEventListener("focus", () => { statusEl.textContent = "Type the letters"; mark(); });
+  lineEl.addEventListener("blur", () => { statusEl.textContent = "Click below, then type"; mark(); });
+  document.querySelector(".demo").addEventListener("click", () => lineEl.focus());
+  show();
+})();
+</script>
+</body>
+</html>
