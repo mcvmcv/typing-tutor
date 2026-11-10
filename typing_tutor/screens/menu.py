@@ -1,7 +1,7 @@
 """Lesson menu: shows each step with stars, locks and a 'keep going' button."""
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtWidgets import (QGridLayout, QHBoxLayout, QLabel, QPushButton,
                                QScrollArea, QVBoxLayout, QWidget)
 
@@ -23,6 +23,7 @@ class LessonMenuScreen(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._profile: Profile | None = None
+        self._next_button: QPushButton | None = None
 
         self.avatar = QLabel()
         self.avatar.setFixedSize(64, 64)
@@ -50,7 +51,7 @@ class LessonMenuScreen(QWidget):
         holder_layout.setContentsMargins(0, 0, 0, 0)
         holder_layout.addLayout(self.lessons_box)
         holder_layout.addStretch()
-        scroll = QScrollArea()
+        self.scroll = scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setWidget(holder)
         holder.setAutoFillBackground(False)
@@ -76,6 +77,7 @@ class LessonMenuScreen(QWidget):
     def refresh(self) -> None:
         if self._profile is None:
             return
+        self._next_button = None
         while self.lessons_box.count():
             self.lessons_box.takeAt(0).widget().deleteLater()
         for lesson in LESSONS:
@@ -86,6 +88,12 @@ class LessonMenuScreen(QWidget):
             self.continue_btn.setText("▶  Start your first lesson!")
         else:
             self.continue_btn.setText("▶  Keep going!")
+        # Wait for the layout to settle, then bring the current step into view.
+        QTimer.singleShot(0, self._scroll_to_next)
+
+    def _scroll_to_next(self) -> None:
+        if self._next_button is not None:
+            self.scroll.ensureWidgetVisible(self._next_button, 0, 120)
 
     def _lesson_section(self, lesson: Lesson) -> QWidget:
         profile = self._profile
@@ -110,6 +118,7 @@ class LessonMenuScreen(QWidget):
                 btn.setText(f"{i + 1}. {step.title}\n{star_text(stars)}")
                 if upcoming == (lesson, i):
                     state = "next"
+                    self._next_button = btn
                 elif stars:
                     state = "done"
                 else:

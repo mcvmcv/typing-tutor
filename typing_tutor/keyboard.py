@@ -116,7 +116,10 @@ def finger_hint(ch: str) -> str:
 
 def char_name(ch: str) -> str:
     names = {" ": "SPACE", ";": "; (semicolon)", "'": "' (apostrophe)",
-             ",": ", (comma)", ".": ". (full stop)", "/": "/ (slash)"}
+             ",": ", (comma)", ".": ". (full stop)", "/": "/ (slash)",
+             "?": "? (question mark)"}
     if ch in names:
         return names[ch]
-    return ch.upper() if ch.isalpha() and ch.islower() else ch
+    if ch.isalpha():
+        return f"capital {ch}" if ch.isupper() else ch.upper()
+    return ch

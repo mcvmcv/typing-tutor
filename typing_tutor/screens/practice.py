@@ -6,8 +6,9 @@ from PySide6.QtWidgets import (QDialog, QHBoxLayout, QLabel, QProgressBar,
                                QPushButton, QVBoxLayout, QWidget)
 
 from ..keyboard import char_name, finger_hint, fingers_for_char
+from ..generator import build_lines
 from ..lessons import Lesson, next_step
-from ..session import TypingSession, stars_for
+from ..session import StepRun, stars_for
 from ..theme import repolish
 from ..widgets.hands_view import HandsView
 from ..widgets.keyboard_view import KeyboardView
@@ -23,7 +24,7 @@ class PracticeScreen(QWidget):
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self._lesson: Lesson | None = None
         self._index = 0
-        self._session: TypingSession | None = None
+        self._run: StepRun | None = None
         self._finishing = False
 
         back = QPushButton("←  Lessons")
@@ -41,6 +42,8 @@ class PracticeScreen(QWidget):
 
         self.instruction = QLabel(objectName="Instruction", wordWrap=True)
         self.typing = TypingView()
+        self.next_line = QLabel(objectName="Stat")
+        self.next_line.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.progress = QProgressBar(textVisible=False)
         self.accuracy_label = QLabel(objectName="Stat")
@@ -63,6 +66,7 @@ class PracticeScreen(QWidget):
         layout.addLayout(top)
         layout.addWidget(self.instruction)
         layout.addWidget(self.typing)
+        layout.addWidget(self.next_line)
         layout.addLayout(stats)
         layout.addWidget(self.hint)
         layout.addWidget(self.keyboard, 5)
@@ -73,13 +77,12 @@ class PracticeScreen(QWidget):
     def start(self, lesson: Lesson, index: int) -> None:
         self._lesson, self._index = lesson, index
         step = lesson.steps[index]
-        self._session = TypingSession(step.text)
+        self._run = StepRun(build_lines(lesson, index))
         self._finishing = False
         self.title.setText(step.title)
-        self.step_count.setText(f"{lesson.title} · step {index + 1} of {len(lesson.steps)}")
         self.instruction.setText(step.instruction)
-        self.typing.set_session(self._session)
-        self.progress.setRange(0, len(step.text))
+        self.typing.set_session(self._run.current)
+        self.progress.setRange(0, self._run.total_chars)
         self._set_hint(None)
         self._refresh()
         self._stats_timer.start()
@@ -90,23 +93,30 @@ class PracticeScreen(QWidget):
         return False
 
     def keyPressEvent(self, event) -> None:
-        s = self._session
+        run = self._run
         text = event.text()
-        if s is None or s.finished or event.isAutoRepeat() or len(text) != 1 \
+        if run is None or self._finishing or event.isAutoRepeat() or len(text) != 1 \
                 or not text.isprintable():
             super().keyPressEvent(event)
             return
+        s = run.current
         expected = s.expected
         if s.press(text):
             self._set_hint(None)
             if s.finished:
-                self._finishing = True
-                self._stats_timer.stop()
-                QTimer.singleShot(350, self._show_result)
+                if run.advance():
+                    self.typing.set_session(run.current)
+                else:
+                    self._finishing = True
+                    self._stats_timer.stop()
+                    QTimer.singleShot(350, self._show_result)
         else:
             self.keyboard.flash_wrong_char(text)
             if text.isalpha() and text.lower() == expected:
                 self._set_hint("Oops! Is Caps Lock on? Press Caps Lock to turn it off.")
+            elif text.isalpha() and text.upper() == expected:
+                self._set_hint(f"That needs a capital! Hold Shift with your "
+                               f"{finger_hint(expected).split('Shift with your ')[-1]}.")
             else:
                 self._set_hint(f"Oops! That was {char_name(text)}. "
                                f"Try {char_name(expected)}.")
@@ -118,12 +128,19 @@ class PracticeScreen(QWidget):
         repolish(self.hint)
 
     def _refresh(self) -> None:
-        s = self._session
+        run = self._run
+        s = run.current
         expected = s.expected
         self.keyboard.set_target_char(expected)
         self.hands.set_active_fingers(fingers_for_char(expected) if expected else ())
         self.typing.update()
-        self.progress.setValue(s.pos)
+        self.progress.setValue(run.typed_chars)
+        lesson = self._lesson
+        self.step_count.setText(
+            f"{lesson.title} · step {self._index + 1} of {len(lesson.steps)}"
+            f" · line {run.index + 1} of {len(run.lines)}")
+        self.next_line.setText("" if run.on_last_line
+                               else f"Next:  {run.lines[run.index + 1]}")
         if self._hint_error:
             self.hint.setText(self._hint_error)
         elif expected is None:
@@ -133,14 +150,14 @@ class PracticeScreen(QWidget):
         self._update_stats()
 
     def _update_stats(self) -> None:
-        s = self._session
+        s = self._run
         if s is None:
             return
         self.accuracy_label.setText(f"Accuracy: {s.accuracy():.0f}%")
         self.speed_label.setText(f"Speed: {s.wpm():.0f} WPM")
 
     def _show_result(self) -> None:
-        s, lesson, index = self._session, self._lesson, self._index
+        s, lesson, index = self._run, self._lesson, self._index
         accuracy, wpm = s.accuracy(), s.wpm()
         stars = stars_for(accuracy)
         self.step_completed.emit(lesson.step_id(index), wpm, accuracy, stars)
@@ -160,7 +177,7 @@ class PracticeScreen(QWidget):
 class ResultDialog(QDialog):
     MESSAGES = {3: "Amazing!", 2: "Great job!", 1: "Nice work!"}
     SUBTEXT = {
-        3: "Super careful typing. You're a home row hero!",
+        3: "Super careful typing. You're a typing hero!",
         2: "Really good! A little more practice and you'll get 3 stars.",
         1: "Practice makes perfect. Try again for more stars!",
     }

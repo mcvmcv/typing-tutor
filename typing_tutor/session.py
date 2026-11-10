@@ -79,3 +79,58 @@ def stars_for(accuracy: float) -> int:
     if accuracy >= 85:
         return 2
     return 1
+
+
+class StepRun:
+    """One play of a step: several lines typed one after another."""
+
+    def __init__(self, lines: list[str], clock=time.monotonic):
+        self.lines = lines
+        self.sessions = [TypingSession(line, clock) for line in lines]
+        self.index = 0
+        self._clock = clock
+
+    @property
+    def current(self) -> TypingSession:
+        return self.sessions[self.index]
+
+    @property
+    def finished(self) -> bool:
+        return all(s.finished for s in self.sessions)
+
+    @property
+    def on_last_line(self) -> bool:
+        return self.index == len(self.sessions) - 1
+
+    def advance(self) -> bool:
+        if self.on_last_line:
+            return False
+        self.index += 1
+        return True
+
+    @property
+    def total_chars(self) -> int:
+        return sum(len(s.text) for s in self.sessions)
+
+    @property
+    def typed_chars(self) -> int:
+        return sum(s.pos for s in self.sessions)
+
+    @property
+    def mistakes(self) -> int:
+        return sum(s.mistakes for s in self.sessions)
+
+    def accuracy(self) -> float:
+        total = self.typed_chars + self.mistakes
+        return 100.0 if total == 0 else 100.0 * self.typed_chars / total
+
+    def wpm(self) -> float:
+        """Speed across all lines, not counting pauses between lines."""
+        seconds = 0.0
+        for s in self.sessions:
+            if s.started_at is not None:
+                end = s.finished_at if s.finished_at is not None else self._clock()
+                seconds += end - s.started_at
+        if seconds < 1:
+            return 0.0
+        return (self.typed_chars / 5) / (seconds / 60)
