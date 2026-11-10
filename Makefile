@@ -1,6 +1,6 @@
 PY := .venv/bin
 
-.PHONY: help install run test coverage lint format typecheck check
+.PHONY: help install run test coverage lint format typecheck check app
 
 help:
 	@echo "make install    set up the virtualenv with the app and dev tools"
@@ -11,6 +11,7 @@ help:
 	@echo "make format     reformat the code with ruff"
 	@echo "make typecheck  check types with mypy"
 	@echo "make check      everything CI runs: lint, format check, types, tests"
+	@echo "make app        build a standalone app in dist/ (no Python needed to run it)"
 
 install:
 	python3 -m venv .venv
@@ -38,3 +39,8 @@ typecheck:
 check: lint typecheck
 	$(PY)/ruff format --check typing_tutor tests
 	$(PY)/pytest -q --cov --cov-report=term --cov-fail-under=90
+
+app:
+	$(PY)/pip install -q -e ".[build]"
+	$(PY)/pyinstaller --noconfirm packaging/learn-typing.spec
+	QT_QPA_PLATFORM=offscreen dist/LearnTyping --smoke-test

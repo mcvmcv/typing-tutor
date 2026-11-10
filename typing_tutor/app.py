@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 
 from PySide6.QtWidgets import QApplication, QDialog, QMainWindow, QStackedWidget
 
@@ -20,7 +21,7 @@ from .theme import apply_theme
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, store: ProfileStore):
+    def __init__(self, store: ProfileStore, sound_folder: Path | None = None):
         super().__init__()
         self.store = store
         self.profile_id: str | None = None
@@ -30,7 +31,7 @@ class MainWindow(QMainWindow):
 
         self.profiles = ProfileScreen(store)
         self.menu = LessonMenuScreen()
-        self.sounds = SoundPlayer(parent=self)
+        self.sounds = SoundPlayer(sound_folder, parent=self)
         self.practice = PracticeScreen(self.sounds)
         self.progress = ProgressScreen()
         self.game = GameScreen(self.sounds)
@@ -128,6 +129,10 @@ def main() -> int:  # pragma: no cover - starts the real app
     app = QApplication(sys.argv)
     app.setApplicationName("learn-typing")
     apply_theme(app)
+    if "--smoke-test" in sys.argv:
+        from . import smoke
+
+        return smoke.run(app)
     window = MainWindow(ProfileStore(ProfileStore.default_path()))
     window.show()
     return app.exec()

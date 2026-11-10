@@ -2,11 +2,26 @@
 
 A friendly touch-typing tutor for kids, built with PySide6.
 
-## Install and play
+## Download and play
+
+No Python needed. Download the app for your computer:
+
+- **Windows:** [LearnTyping-windows.exe](https://github.com/mcvmcv/typing-tutor/releases/latest/download/LearnTyping-windows.exe)
+- **Mac with Apple chip (M1 or newer):** [LearnTyping-macos-apple-silicon.zip](https://github.com/mcvmcv/typing-tutor/releases/latest/download/LearnTyping-macos-apple-silicon.zip)
+- **Mac with Intel chip:** [LearnTyping-macos-intel.zip](https://github.com/mcvmcv/typing-tutor/releases/latest/download/LearnTyping-macos-intel.zip)
+- **Linux:** [LearnTyping-linux.tar.gz](https://github.com/mcvmcv/typing-tutor/releases/latest/download/LearnTyping-linux.tar.gz)
+
+The app isn't signed with a paid developer certificate, so the first time you
+open it Windows or macOS will warn you. On Windows, click **More info → Run
+anyway**. On a Mac, open **System Settings → Privacy & Security** and click
+**Open Anyway**. See the [latest release](https://github.com/mcvmcv/typing-tutor/releases/latest)
+for details.
+
+## Install with Python
 
 You need **Python 3.12 or newer** (check with `python3 --version`).
 
-**Just want to play?** Install it straight from GitHub with
+**With pipx:** install it straight from GitHub with
 [pipx](https://pipx.pypa.io/), then start it:
 
 ```bash
@@ -33,7 +48,12 @@ python -m venv .venv
 .venv\Scripts\learn-typing
 ```
 
-Progress is saved per player in `~/.local/share/learn-typing/profiles.json`.
+Progress is saved per player in `profiles.json`, separately from the app, so
+updating keeps everyone's stars:
+
+- **Linux:** `~/.local/share/learn-typing/`
+- **macOS:** `~/Library/Application Support/learn-typing/`
+- **Windows:** `%APPDATA%\learn-typing\`
 
 ## Course
 
@@ -64,7 +84,8 @@ stats. Esc pauses.
 ## Sounds
 
 Soft synthesised sound effects (key tick, gentle "oops", line chime, star
-fanfare) are generated on first run into `~/.cache/learn-typing/`. Each
+fanfare) are generated on first run into the user's cache folder (e.g.
+`~/.cache/learn-typing/` on Linux). Each
 player can turn sounds or just key clicks off in Settings, or use the
 Sound button on the practice screen.
 
@@ -94,6 +115,8 @@ overwritten.
 - `typing_tutor/storage.py` — player profiles and progress
 - `typing_tutor/widgets/` — on-screen keyboard, hands, typing line
 - `typing_tutor/screens/` — player picker, lesson menu, practice screen
+- `typing_tutor/smoke.py` — `--smoke-test` self-check for built apps
+- `packaging/` — PyInstaller spec and release notes for the standalone apps
 
 ## Development
 
@@ -101,13 +124,25 @@ overwritten.
 make check      # lint, format check, type check, tests with coverage (what CI runs)
 make test       # just the tests
 make format     # auto-format with ruff
+make app        # build a standalone app into dist/ and smoke-test it
 ```
 
 - **Tests** live in `tests/` (pytest + pytest-qt). The GUI tests drive the real
   screens offscreen with simulated key presses. Every test uses a temporary save
   file and sound folder, so running them never touches real progress.
 - **Linting/formatting:** ruff. **Types:** mypy (config in `pyproject.toml`).
-- **CI:** `.github/workflows/ci.yml` runs `make check` on Python 3.12 and 3.13
-  once the repo is pushed to GitHub.
+- **CI:** `.github/workflows/ci.yml` runs `make check` on Python 3.12 and 3.13.
+- **Standalone apps:** `packaging/learn-typing.spec` builds them with
+  PyInstaller. `.github/workflows/build.yml` builds and smoke-tests them on
+  Windows, macOS (Apple and Intel) and Linux. `--smoke-test` starts the built
+  app with throwaway data, types a key, checks the sounds load and play, and
+  exits.
+- **Releasing:** bump `version` in `pyproject.toml`, commit, then
+  `git tag v<version> && git push --tags`. The build workflow publishes a
+  GitHub Release with the apps attached.
 - `typing_tutor/ui.py` has small widget helpers; use `label(text, name)` rather
   than `QLabel(objectName=...)`, which PySide's type stubs reject.
+
+## License
+
+[MIT](LICENSE)
