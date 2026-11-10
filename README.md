@@ -98,6 +98,13 @@ steps finished and practice days, a speed chart (by day or every step, with the
 speed goal as a dashed line; hover a point for details), and a table of recent
 practice.
 
+## For grown-ups
+
+"For grown-ups" on the player picker shows every player side by side: where
+they're up to, steps and stars, best speed, recent accuracy, when they last
+practised, steps this week, best Balloon Pop score and tricky keys. "See
+progress" opens a player's full progress screen without switching player.
+
 ## Data
 
 Everything is stored in one JSON file (path above), saved atomically. If it
@@ -116,7 +123,7 @@ overwritten.
 - `typing_tutor/keyboard.py` — US QWERTY layout and finger assignments
 - `typing_tutor/storage.py` — player profiles and progress
 - `typing_tutor/widgets/` — on-screen keyboard, hands, typing line
-- `typing_tutor/screens/` — player picker, lesson menu, practice screen
+- `typing_tutor/screens/` — player picker, lesson menu, practice, progress, game, grown-ups
 - `typing_tutor/smoke.py` — `--smoke-test` self-check for built apps
 - `packaging/` — PyInstaller spec and release notes for the standalone apps
 - `docs/` — the website (GitHub Pages serves it from `main`)

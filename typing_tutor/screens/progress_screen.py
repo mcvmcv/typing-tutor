@@ -45,12 +45,12 @@ class ProgressScreen(QWidget):
         super().__init__(parent)
         self._profile: Profile | None = None
 
-        back = QPushButton("←  Lessons")
-        back.setProperty("role", "secondary")
-        back.clicked.connect(self.back_requested)
+        self.back = QPushButton("←  Lessons")
+        self.back.setProperty("role", "secondary")
+        self.back.clicked.connect(self.back_requested)
         self.title = label("", "Title")
         top = QHBoxLayout()
-        top.addWidget(back)
+        top.addWidget(self.back)
         top.addSpacing(16)
         top.addWidget(self.title)
         top.addStretch()
@@ -118,8 +118,9 @@ class ProgressScreen(QWidget):
             raise RuntimeError("set_profile() must be called first")
         return self._profile
 
-    def set_profile(self, profile: Profile) -> None:
+    def set_profile(self, profile: Profile, back_text: str = "←  Lessons") -> None:
         self._profile = profile
+        self.back.setText(back_text)
         self.title.setText(f"{profile.name}'s progress")
         s = summary(profile)
         self.best.value.setText(f"{s.best_wpm:.0f} WPM" if s.best_wpm else "–")

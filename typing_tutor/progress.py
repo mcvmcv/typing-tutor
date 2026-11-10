@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from .lessons import ALL_STEPS
-from .plays import REVIEW_ID
+from .lessons import ALL_STEPS, first_unfinished
+from .plays import REVIEW_ID, key_scores, weak_keys
 from .storage import Profile
 
 MAX_ATTEMPT_POINTS = 60
@@ -94,3 +94,52 @@ def summary(profile: Profile) -> Summary:
 
 def recent_attempts(profile: Profile, limit: int = 12) -> list[dict]:
     return list(reversed(profile.history[-limit:]))
+
+
+@dataclass(frozen=True)
+class Overview:
+    """One player's line in the parent view."""
+
+    summary: Summary
+    up_to: str  # the next step to play, or a note that the course is done
+    last_practised: datetime | None
+    steps_this_week: int
+    tricky_keys: list[str] | None  # None: not enough typing yet to tell
+    game_best: int  # best Balloon Pop score on any difficulty
+
+
+def overview(profile: Profile, now: datetime | None = None) -> Overview:
+    now = now or datetime.now()
+    upcoming = first_unfinished(profile.stars)
+    if upcoming is None:
+        up_to = "Finished the whole course!"
+    else:
+        lesson, i = upcoming
+        up_to = step_title(lesson.step_id(i))
+    times = [_when(h) for h in profile.history]
+    week_ago = now - timedelta(days=7)
+    return Overview(
+        summary=summary(profile),
+        up_to=up_to,
+        last_practised=max(times, default=None),
+        steps_this_week=sum(1 for t in times if t > week_ago),
+        tricky_keys=weak_keys(profile) if key_scores(profile) else None,
+        game_best=max(profile.game_best.values(), default=0),
+    )
+
+
+def days_ago(when: datetime | None, now: datetime | None = None) -> str:
+    """'Today', 'Yesterday', '3 days ago'... by calendar day."""
+    if when is None:
+        return "Not yet"
+    now = now or datetime.now()
+    days = (now.date() - when.date()).days
+    if days <= 0:
+        return "Today"
+    if days == 1:
+        return "Yesterday"
+    if days < 14:
+        return f"{days} days ago"
+    if days < 60:
+        return f"{days // 7} weeks ago"
+    return _short_date(when) + (f" {when.year}" if when.year != now.year else "")
