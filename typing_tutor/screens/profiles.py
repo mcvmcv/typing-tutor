@@ -247,6 +247,10 @@ class SettingsDialog(QDialog):
         self.clicks.setEnabled(profile.sound)
         self.sound.toggled.connect(self.clicks.setEnabled)
 
+        line_heading = label("Typing line", "Heading")
+        self.dots = QCheckBox("Show spaces as dots ( · )")
+        self.dots.setChecked(profile.space_dots)
+
         ok = QPushButton("Save")
         ok.setDefault(True)
         ok.clicked.connect(self.accept)
@@ -267,6 +271,9 @@ class SettingsDialog(QDialog):
         layout.addWidget(sound_heading)
         layout.addWidget(self.sound)
         layout.addWidget(self.clicks)
+        layout.addSpacing(12)
+        layout.addWidget(line_heading)
+        layout.addWidget(self.dots)
         layout.addSpacing(16)
         layout.addLayout(buttons)
 
@@ -278,3 +285,6 @@ class SettingsDialog(QDialog):
 
     def key_clicks_on(self) -> bool:
         return self.clicks.isChecked()
+
+    def space_dots_on(self) -> bool:
+        return self.dots.isChecked()

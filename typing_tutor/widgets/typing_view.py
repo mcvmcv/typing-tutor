@@ -18,6 +18,8 @@ class TypingView(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._session: TypingSession | None = None
+        # Upcoming spaces show as a faint centred dot so they aren't missed.
+        self.space_dots = True
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.setFixedHeight(110)
 
@@ -82,9 +84,9 @@ class TypingView(QWidget):
             else:
                 color = PENDING
             if ch == " ":
-                if i < s.pos:
-                    continue
-                glyph = "·"  # show upcoming spaces so they aren't missed
+                if i < s.pos or not self.space_dots:
+                    continue  # the cursor block still shows when a space is next
+                glyph = "·"
             else:
                 glyph = ch
             p.setPen(color)

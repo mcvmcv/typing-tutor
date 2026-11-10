@@ -74,12 +74,13 @@ class MainWindow(QMainWindow):
 
     def choose_profile(self, profile_id: str) -> None:
         self.profile_id = profile_id
-        self._apply_sound_settings()
+        self._apply_settings()
         self.show_menu()
 
-    def _apply_sound_settings(self) -> None:
+    def _apply_settings(self) -> None:
         self.sounds.enabled = self.profile.sound
         self.sounds.key_clicks = self.profile.key_clicks
+        self.practice.typing.space_dots = self.profile.space_dots
 
     def show_profiles(self) -> None:
         self.profiles.refresh()
@@ -141,7 +142,8 @@ class MainWindow(QMainWindow):
         if dlg.exec() == QDialog.DialogCode.Accepted:
             self.store.set_speed_goal(profile.id, dlg.speed_goal())
             self.store.set_sound(profile.id, dlg.sound_on(), dlg.key_clicks_on())
-            self._apply_sound_settings()
+            self.store.set_space_dots(profile.id, dlg.space_dots_on())
+            self._apply_settings()
             self.menu.refresh()
 
     def _record(self, result: StepResult) -> None:
