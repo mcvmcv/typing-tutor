@@ -134,6 +134,13 @@ checked first, so a wrong or damaged file is refused with an explanation. New
 players are added (renamed, e.g. "Mia 2", if the name is taken), and if a
 player is already here it asks before replacing their progress.
 
+**Keyboard:** pick **US** or **UK** to match the computer's keyboard. The
+on-screen keyboard and finger hints follow it (on UK: the tall Enter, `#` by
+Enter, `\` by the left Shift, `"` on Shift+2 and `@` on Shift+'). Until you
+choose, it's guessed from the computer's region (UK in the UK and Ireland,
+otherwise US). The keys the course teaches are in the same place on both, so
+the lessons are the same.
+
 ## Data
 
 Everything is stored in one JSON file (path above), saved atomically. A backup
@@ -150,7 +157,7 @@ overwritten.
 - `typing_tutor/game.py` — Balloon Pop rules (drawing is in `screens/game_screen.py`)
 - `typing_tutor/progress.py` — chart points and summary numbers from history
 - `typing_tutor/plays.py` — what gets played: course steps, tricky-key reviews, speed goals
-- `typing_tutor/keyboard.py` — US QWERTY layout and finger assignments
+- `typing_tutor/keyboard.py` — US and UK QWERTY layouts and finger assignments
 - `typing_tutor/storage.py` — player profiles and progress
 - `typing_tutor/widgets/` — on-screen keyboard, hands, typing line
 - `typing_tutor/screens/` — player picker, lesson menu, practice, progress, game, grown-ups

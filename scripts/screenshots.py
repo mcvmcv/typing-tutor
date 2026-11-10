@@ -91,6 +91,7 @@ def _practice(
 
 def demo_store(path: Path) -> ProfileStore:
     store = ProfileStore(path)
+    store.keyboard = "us"  # not guessed from this computer's region
     rng = random.Random(4)
     mia = store.add("Mia", AVATAR_COLORS[6])
     _practice(mia, rng, steps=14, days=20, wpm=(6, 15), accuracy=(88, 97), tricky="ri")

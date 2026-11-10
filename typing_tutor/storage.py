@@ -138,6 +138,9 @@ class ProfileStore:
     def __init__(self, path: Path):
         self.path = path
         self.profiles: list[Profile] = []
+        # The computer's keyboard layout ("us" or "uk"), or None if never chosen.
+        # It belongs to this computer, so backups don't carry it.
+        self.keyboard: str | None = None
         self.load()
 
     @staticmethod
@@ -151,6 +154,8 @@ class ProfileStore:
         try:
             data = json.loads(self.path.read_text(encoding="utf-8"))
             self.profiles = [Profile.from_dict(p) for p in data.get("profiles", [])]
+            keyboard = data.get("keyboard")
+            self.keyboard = keyboard if isinstance(keyboard, str) else None
         except (OSError, ValueError, TypeError):
             # Keep the unreadable file so progress isn't silently lost.
             stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -158,7 +163,14 @@ class ProfileStore:
             self.profiles = []
 
     def save(self) -> None:
-        _write_json(self.path, {"version": 1, "profiles": [asdict(p) for p in self.profiles]})
+        data: dict = {"version": 1, "profiles": [asdict(p) for p in self.profiles]}
+        if self.keyboard:
+            data["keyboard"] = self.keyboard
+        _write_json(self.path, data)
+
+    def set_keyboard(self, code: str) -> None:
+        self.keyboard = code
+        self.save()
 
     # Backups -------------------------------------------------------------
 

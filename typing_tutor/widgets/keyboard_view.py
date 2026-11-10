@@ -5,11 +5,11 @@ from __future__ import annotations
 import math
 
 from PySide6.QtCore import QElapsedTimer, QPointF, QRectF, QSize, Qt
-from PySide6.QtGui import QColor, QFont, QPainter, QPen
+from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPen
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
-from ..keyboard import ROW_UNITS, ROWS, keys_for_char
-from ..theme import INK, finger_color, mix
+from ..keyboard import ROW_UNITS, current, keys_for_char
+from ..theme import INK, MUTED, finger_color, mix
 from ..ui import timer
 
 NEUTRAL_KEY = QColor("#ddd5c6")
@@ -21,6 +21,7 @@ class KeyboardView(QWidget):
         super().__init__(parent)
         self._targets: set[str] = set()
         self._wrong: str | None = None
+        self.placed: list = []  # (key, rect) from the last paint
         self._clock = QElapsedTimer()
         self._clock.start()
         self._pulse_timer = timer(self, 33, self.update)
@@ -52,7 +53,8 @@ class KeyboardView(QWidget):
     def paintEvent(self, event) -> None:
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        rows = len(ROWS)
+        layout = current()
+        rows = len(layout.rows)
         unit = min(self.width() / (ROW_UNITS + 0.4), self.height() / (rows + 0.4))
         x0 = (self.width() - unit * ROW_UNITS) / 2
         y0 = (self.height() - unit * rows) / 2
@@ -66,7 +68,7 @@ class KeyboardView(QWidget):
         small.setPixelSize(max(7, int(unit * 0.2)))
 
         placed = []
-        for r, row in enumerate(ROWS):
+        for r, row in enumerate(layout.rows):
             x = 0.0
             for key in row:
                 rect = QRectF(
@@ -75,13 +77,26 @@ class KeyboardView(QWidget):
                     key.width * unit - gap,
                     unit - gap,
                 )
-                placed.append((key, rect))
+                if key.shape != "blank":  # the space under a tall Enter
+                    placed.append((key, rect))
                 x += key.width
+        self.placed = placed
 
         # Draw the highlighted keys last so their glow sits on top.
         placed.sort(key=lambda kr: kr[0].ident in self._targets)
         for key, rect in placed:
             self._paint_key(p, key, rect, unit, pulse, big, small)
+
+    @staticmethod
+    def _shape(key, rect: QRectF, unit: float, radius: float) -> QPainterPath:
+        path = QPainterPath()
+        path.addRoundedRect(rect, radius, radius)
+        if key.shape == "iso-enter":
+            # Drop down into the next row, a quarter key in from the left.
+            lower = QPainterPath()
+            lower.addRoundedRect(rect.adjusted(unit * 0.25, 0, 0, unit), radius, radius)
+            path = path.united(lower).simplified()
+        return path
 
     def _paint_key(self, p, key, rect, unit, pulse, big, small) -> None:
         base = finger_color(key.fingers[0]) if key.fingers else NEUTRAL_KEY
@@ -98,17 +113,17 @@ class KeyboardView(QWidget):
             p.setPen(Qt.PenStyle.NoPen)
             p.setBrush(glow)
             g = unit * 0.12
-            p.drawRoundedRect(rect.adjusted(-g, -g, g, g), radius * 1.6, radius * 1.6)
+            p.drawPath(self._shape(key, rect.adjusted(-g, -g, g, g), unit, radius * 1.6))
         else:
             fill = mix(base, QColor("white"), 0.55)
             pen = QPen(mix(base, QColor(INK), 0.3), 1.2)
 
         p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(QColor(0, 0, 0, 35))
-        p.drawRoundedRect(rect.translated(0, unit * 0.04), radius, radius)
+        p.drawPath(self._shape(key, rect.translated(0, unit * 0.04), unit, radius))
         p.setPen(pen)
         p.setBrush(fill)
-        p.drawRoundedRect(rect, radius, radius)
+        p.drawPath(self._shape(key, rect, unit, radius))
 
         if key.bump:
             pen = QPen(QColor(INK), max(1.5, unit * 0.04))
@@ -120,7 +135,27 @@ class KeyboardView(QWidget):
                 QPointF(rect.center().x() + unit * 0.1, y),
             )
 
-        if key.label:
+        if key.shifted and not key.label.isalpha():
+            # Symbol keys show both characters like a real keycap, Shift's on top,
+            # so e.g. " is visibly on 2 on a UK keyboard.
+            top = QRectF(
+                rect.left(), rect.top() + rect.height() * 0.06, rect.width(), rect.height() * 0.44
+            )
+            bottom = QRectF(
+                rect.left(),
+                rect.center().y() - rect.height() * 0.06,
+                rect.width(),
+                rect.height() * 0.5,
+            )
+            upper = QFont(big)
+            upper.setPixelSize(max(7, int(big.pixelSize() * 0.68)))
+            p.setPen(QColor(MUTED))
+            p.setFont(upper)
+            p.drawText(top, Qt.AlignmentFlag.AlignCenter, key.shifted)
+            p.setPen(QColor(INK))
+            p.setFont(big)
+            p.drawText(bottom, Qt.AlignmentFlag.AlignCenter, key.label)
+        elif key.label:
             p.setPen(QColor(INK))
             p.setFont(big if len(key.label) == 1 else small)
             p.drawText(rect, Qt.AlignmentFlag.AlignCenter, key.label)

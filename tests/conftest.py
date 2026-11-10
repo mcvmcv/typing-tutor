@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 from PySide6.QtCore import QStandardPaths
 
-from typing_tutor import sounds
+from typing_tutor import keyboard, sounds
 from typing_tutor.lessons import ALL_STEPS
 from typing_tutor.storage import Profile, ProfileStore
 
@@ -39,6 +39,15 @@ def themed_app(qapp):
 
     apply_theme(qapp)
     return qapp
+
+
+@pytest.fixture(autouse=True)
+def us_keyboard(monkeypatch):
+    """Every test starts on a US keyboard, whatever this computer's region."""
+    monkeypatch.setattr(keyboard, "system_layout", lambda: "us")
+    keyboard.set_layout("us")
+    yield
+    keyboard.set_layout("us")
 
 
 @pytest.fixture
