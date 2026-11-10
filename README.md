@@ -169,7 +169,9 @@ make icon       # redraw the app icon (PNG, Windows .ico, macOS .icns, favicon)
   file and sound folder, so running them never touches real progress.
 - **Linting/formatting:** ruff. **Types:** mypy (config in `pyproject.toml`).
 - **CI:** `.github/workflows/ci.yml` runs `make check` on Linux (Python 3.12 and
-  3.13) and the tests on Windows and macOS.
+  3.13) and the tests on Windows and macOS. It runs only when a tag is pushed,
+  or by hand from the Actions tab (**CI → Run workflow**), so run `make check`
+  locally before pushing.
 - **Standalone apps:** `packaging/learn-typing.spec` builds them with
   PyInstaller. `.github/workflows/build.yml` builds and smoke-tests them on
   Windows, macOS (Apple and Intel) and Linux. `--smoke-test` starts the built

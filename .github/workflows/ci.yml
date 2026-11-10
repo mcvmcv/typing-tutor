@@ -1,8 +1,11 @@
 name: CI
 
+# Runs only when a tag is pushed (e.g. a release tag), or by hand from the
+# Actions tab. Run `make check` locally before pushing.
 on:
   push:
-  pull_request:
+    tags: ["**"]
+  workflow_dispatch:
 
 jobs:
   check:
