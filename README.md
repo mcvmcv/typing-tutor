@@ -4,6 +4,29 @@ A friendly touch-typing tutor for kids, built with PySide6.
 
 **Website:** https://mcvmcv.github.io/typing-tutor/
 
+<p align="center">
+  <img src="docs/screenshots/practice.png" alt="Practice screen: a line of text to type, a colour-coded keyboard and hands showing which finger to use, and a friendly hint after a mistake" width="720">
+</p>
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/lessons.png" alt="Lesson menu with stars for each step and tricky keys"></td>
+    <td><img src="docs/screenshots/balloon-pop.png" alt="Balloon Pop game: words on balloons floating up"></td>
+  </tr>
+  <tr>
+    <td align="center">Lessons, stars and tricky keys</td>
+    <td align="center">Balloon Pop</td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/progress.png" alt="Progress screen with a typing speed chart"></td>
+    <td><img src="docs/screenshots/grown-ups.png" alt="Grown-ups view comparing three players"></td>
+  </tr>
+  <tr>
+    <td align="center">Progress chart</td>
+    <td align="center">For grown-ups</td>
+  </tr>
+</table>
+
 ## Download and play
 
 No Python needed. Download the app for your computer:
@@ -126,7 +149,8 @@ overwritten.
 - `typing_tutor/screens/` — player picker, lesson menu, practice, progress, game, grown-ups
 - `typing_tutor/smoke.py` — `--smoke-test` self-check for built apps
 - `packaging/` — PyInstaller spec and release notes for the standalone apps
-- `docs/` — the website (GitHub Pages serves it from `main`)
+- `docs/` — the website (GitHub Pages serves it from `main`) and screenshots
+- `scripts/screenshots.py` — makes the screenshots from demo players, offscreen
 
 ## Development
 
@@ -135,6 +159,7 @@ make check      # lint, format check, type check, tests with coverage (what CI r
 make test       # just the tests
 make format     # auto-format with ruff
 make app        # build a standalone app into dist/ and smoke-test it
+make screenshots  # regenerate docs/screenshots/ from made-up demo players
 ```
 
 - **Tests** live in `tests/` (pytest + pytest-qt). The GUI tests drive the real
