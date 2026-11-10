@@ -1,4 +1,5 @@
 """Line chart of typing speed with a hover crosshair and tooltip."""
+
 from __future__ import annotations
 
 import math
@@ -50,9 +51,12 @@ class WpmChart(QWidget):
     # Geometry ---------------------------------------------------------------
 
     def _plot_rect(self) -> QRectF:
-        return QRectF(MARGIN_LEFT, MARGIN_TOP,
-                      self.width() - MARGIN_LEFT - MARGIN_RIGHT,
-                      self.height() - MARGIN_TOP - MARGIN_BOTTOM)
+        return QRectF(
+            MARGIN_LEFT,
+            MARGIN_TOP,
+            self.width() - MARGIN_LEFT - MARGIN_RIGHT,
+            self.height() - MARGIN_TOP - MARGIN_BOTTOM,
+        )
 
     def _y_max(self) -> tuple[float, float]:
         top = max([p.wpm for p in self._points] + [self._goal, 5.0]) * 1.15
@@ -118,8 +122,11 @@ class WpmChart(QWidget):
             p.drawLine(QPointF(plot.left(), y), QPointF(plot.right(), y))
             p.setPen(QColor(MUTED))
             label = f"{value:g}"
-            p.drawText(QRectF(0, y - 9, MARGIN_LEFT - 10, 18),
-                       Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, label)
+            p.drawText(
+                QRectF(0, y - 9, MARGIN_LEFT - 10, 18),
+                Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+                label,
+            )
             value += step
 
         # X labels: only where the date changes, thinned so they never collide.
@@ -136,8 +143,11 @@ class WpmChart(QWidget):
             if x - w / 2 < last_right + 8:
                 continue
             p.setPen(QColor(MUTED))
-            p.drawText(QRectF(x - w / 2 - 2, plot.bottom() + 10, w + 4, 18),
-                       Qt.AlignmentFlag.AlignCenter, pt.label)
+            p.drawText(
+                QRectF(x - w / 2 - 2, plot.bottom() + 10, w + 4, 18),
+                Qt.AlignmentFlag.AlignCenter,
+                pt.label,
+            )
             last_right = x + w / 2
             last_x = x
 
@@ -148,13 +158,17 @@ class WpmChart(QWidget):
             p.setPen(pen)
             p.drawLine(QPointF(plot.left(), y), QPointF(plot.right(), y))
             p.setPen(QColor(INK))
-            p.drawText(QRectF(plot.right() + 6, y - 9, MARGIN_RIGHT - 6, 18),
-                       Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
-                       f"Goal {self._goal:g}")
+            p.drawText(
+                QRectF(plot.right() + 6, y - 9, MARGIN_RIGHT - 6, 18),
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                f"Goal {self._goal:g}",
+            )
 
         # The line.
-        pts = [QPointF(self._x(i, plot), self._y(pt.wpm, plot, y_max))
-               for i, pt in enumerate(self._points)]
+        pts = [
+            QPointF(self._x(i, plot), self._y(pt.wpm, plot, y_max))
+            for i, pt in enumerate(self._points)
+        ]
         if len(pts) > 1:
             path = QPainterPath(pts[0])
             for q in pts[1:]:
@@ -189,9 +203,11 @@ class WpmChart(QWidget):
             bold = QFont(small)
             bold.setBold(True)
             p.setFont(bold)
-            p.drawText(QRectF(pts[-1].x() + 8, pts[-1].y() - 20, MARGIN_RIGHT, 18),
-                       Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
-                       f"{last.wpm:.0f}")
+            p.drawText(
+                QRectF(pts[-1].x() + 8, pts[-1].y() - 20, MARGIN_RIGHT, 18),
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                f"{last.wpm:.0f}",
+            )
             p.setFont(small)
 
         if self._hover is not None:
@@ -215,6 +231,9 @@ class WpmChart(QWidget):
         for i, text in enumerate(lines):
             p.setFont(bold if i == 1 else regular)
             p.setPen(QColor(INK) if i < 2 else QColor(MUTED))
-            p.drawText(QRectF(x + 12, y + 7 + i * 19, w - 24, 19),
-                       Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, text)
+            p.drawText(
+                QRectF(x + 12, y + 7 + i * 19, w - 24, 19),
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                text,
+            )
         p.setFont(regular)

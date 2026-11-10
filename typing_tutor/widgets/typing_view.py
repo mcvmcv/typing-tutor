@@ -1,4 +1,5 @@
 """The line of text being typed, coloured as the child progresses."""
+
 from __future__ import annotations
 
 from PySide6.QtCore import QPointF, QRectF, QSize
@@ -68,8 +69,9 @@ class TypingView(QWidget):
                 p.setBrush(CURSOR_ERROR if s.error_at_cursor else CURSOR)
                 p.drawRoundedRect(QRectF(x - 1, mid - cell_h / 2, cw + 2, cell_h), 6, 6)
                 p.setPen(QPen(QColor(INK), 3))
-                p.drawLine(QPointF(x + 3, mid + cell_h / 2 - 4),
-                           QPointF(x + cw - 3, mid + cell_h / 2 - 4))
+                p.drawLine(
+                    QPointF(x + 3, mid + cell_h / 2 - 4), QPointF(x + cw - 3, mid + cell_h / 2 - 4)
+                )
             state = s.states[i]
             if state is CharState.CORRECT:
                 color = QColor(GOOD)
@@ -82,7 +84,7 @@ class TypingView(QWidget):
             if ch == " ":
                 if i < s.pos:
                     continue
-                glyph = "·"   # show upcoming spaces so they aren't missed
+                glyph = "·"  # show upcoming spaces so they aren't missed
             else:
                 glyph = ch
             p.setPen(color)

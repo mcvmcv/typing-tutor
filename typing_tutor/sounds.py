@@ -4,6 +4,7 @@ Sounds are written as small WAV files to the cache folder and played with
 QSoundEffect, which has low enough latency for key clicks. If there's no
 audio device, everything quietly does nothing.
 """
+
 from __future__ import annotations
 
 import math
@@ -16,8 +17,8 @@ from PySide6.QtCore import QObject, QStandardPaths, QUrl
 from PySide6.QtMultimedia import QSoundEffect
 
 RATE = 44100
-CLICK_VOICES = 4          # overlapping copies so fast typing never cuts clicks off
-SOUND_VERSION = 3         # bump to regenerate cached files after changing a sound
+CLICK_VOICES = 4  # overlapping copies so fast typing never cuts clicks off
+SOUND_VERSION = 3  # bump to regenerate cached files after changing a sound
 
 # Note frequencies (Hz).
 C5, E5, G5, C6, E6, G6, C7 = 523.25, 659.25, 783.99, 1046.5, 1318.5, 1568.0, 2093.0
@@ -90,9 +91,10 @@ def _fanfare(stars: int) -> list[float]:
         parts.append((end, _bell(f, 1.0, volume=0.35, decay=3)))
     if stars == 3:
         for k in range(4):
-            parts.append((end + 0.1 + k * 0.07, _bell(C7 * (1 + 0.12 * k), 0.2,
-                                                      volume=0.15, decay=14)))
-    return [0.7 * v for v in _mix(*parts)]   # celebratory, not startling
+            parts.append(
+                (end + 0.1 + k * 0.07, _bell(C7 * (1 + 0.12 * k), 0.2, volume=0.15, decay=14))
+            )
+    return [0.7 * v for v in _mix(*parts)]  # celebratory, not startling
 
 
 def _pop() -> list[float]:
@@ -147,8 +149,7 @@ def _write_wav(path: Path, samples: list[float]) -> None:
         w.setnchannels(1)
         w.setsampwidth(2)
         w.setframerate(RATE)
-        w.writeframes(b"".join(struct.pack("<h", int(max(-1, min(1, s)) * 32000))
-                               for s in samples))
+        w.writeframes(b"".join(struct.pack("<h", int(max(-1, min(1, s)) * 32000)) for s in samples))
 
 
 def sound_dir() -> Path:
@@ -181,7 +182,7 @@ class SoundPlayer(QObject):
         try:
             paths = ensure_sound_files(folder or sound_dir())
         except OSError:
-            return   # can't write the cache: run silently
+            return  # can't write the cache: run silently
         for name, path in paths.items():
             voices = CLICK_VOICES if name in ("click", "oops", "pop") else 1
             effects = []

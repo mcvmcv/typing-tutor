@@ -1,4 +1,5 @@
 """Builds practice lines for a step from the keys the child knows."""
+
 from __future__ import annotations
 
 import random
@@ -7,9 +8,9 @@ from .keyboard import HOME_KEYS, keys_for_char
 from .lessons import KNOWN, Lesson, Step
 from .wordlist import NAMES, SENTENCES, WORDS
 
-LINE_LEN = 44       # target length for drill and word lines
-SENTENCE_MAX = 54   # a sentence line may run a little longer
-FOCUS_SHARE = 0.7   # how often to pick something featuring the new keys
+LINE_LEN = 44  # target length for drill and word lines
+SENTENCE_MAX = 54  # a sentence line may run a little longer
+FOCUS_SHARE = 0.7  # how often to pick something featuring the new keys
 MIN_FOCUS_WORDS = 6
 
 
@@ -87,7 +88,7 @@ def drill_line(new: list[str], known: frozenset[str], rng: random.Random) -> str
             return c * 3
         anchor = _home_anchor(c)
         if r < 0.5 and anchor:
-            return anchor + c + anchor   # e.g. "ded": reach up and come back
+            return anchor + c + anchor  # e.g. "ded": reach up and come back
         if c.isupper():
             return c + "".join(rng.choice(lower) for _ in range(rng.randint(1, 3)))
         group = [rng.choice(pool) for _ in range(rng.randint(2, 4))]
@@ -170,8 +171,10 @@ def _made_up_sentence(new: list[str], known: frozenset[str], rng: random.Random)
     words = words or ["a"]
     groups: list[str] = []
     while sum(len(g) + 2 for g in groups) < LINE_LEN - 8:
-        group = " ".join(rng.choice(words if rng.random() > 0.5 or not focus else focus)
-                         for _ in range(rng.randint(2, 4)))
+        group = " ".join(
+            rng.choice(words if rng.random() > 0.5 or not focus else focus)
+            for _ in range(rng.randint(2, 4))
+        )
         groups.append(group)
     sep = "; " if ";" in known else " "
     return sep.join(groups)

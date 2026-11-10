@@ -99,7 +99,7 @@ def test_a_perfect_player_levels_up_and_balloons_speed_up():
     for _ in range(3000):
         g.update(0.05)
         for b in [b for b in g.balloons if b.active and b.y < 0.7]:
-            for ch in b.word[b.typed:]:
+            for ch in b.word[b.typed :]:
                 g.type(ch)
     assert g.lives == LIVES
     assert g.level == 1 + g.popped // POPS_PER_LEVEL > 3

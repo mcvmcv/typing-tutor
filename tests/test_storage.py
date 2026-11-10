@@ -67,10 +67,22 @@ def test_unknown_player_ids_are_ignored(store):
 
 def test_files_from_older_versions_load_with_defaults(tmp_path):
     path = tmp_path / "profiles.json"
-    path.write_text(json.dumps({"profiles": [
-        {"id": "x", "name": "Old", "color": "#fff", "best": {}, "history": [],
-         "retired_field": 1},
-    ]}))
+    path.write_text(
+        json.dumps(
+            {
+                "profiles": [
+                    {
+                        "id": "x",
+                        "name": "Old",
+                        "color": "#fff",
+                        "best": {},
+                        "history": [],
+                        "retired_field": 1,
+                    },
+                ]
+            }
+        )
+    )
     profile = ProfileStore(path).get("x")
     assert profile is not None
     assert profile.key_stats == {} and profile.speed_goal == 0 and profile.sound

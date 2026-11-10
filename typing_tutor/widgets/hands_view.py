@@ -1,4 +1,5 @@
 """Two cartoon hands showing which finger to use."""
+
 from __future__ import annotations
 
 from PySide6.QtCore import QPointF, QRectF, QSize, Qt
@@ -73,8 +74,11 @@ class HandsView(QWidget):
             self._finger_shape(p, frect, fw, finger)
             p.setPen(QColor(INK))
             p.setFont(label_font)
-            p.drawText(QRectF(x, top + fw * 0.1, fw, fw * 0.9),
-                       Qt.AlignmentFlag.AlignCenter, HOME_KEYS[finger].upper())
+            p.drawText(
+                QRectF(x, top + fw * 0.1, fw, fw * 0.9),
+                Qt.AlignmentFlag.AlignCenter,
+                HOME_KEYS[finger].upper(),
+            )
 
         p.setPen(QPen(mix(QColor(SKIN), QColor(INK), 0.35), 1.5))
         p.setBrush(QColor(SKIN))
@@ -98,5 +102,7 @@ class HandsView(QWidget):
             p.setPen(pen)
             c = QPointF(rect.center().x(), rect.top() - fw * 0.45)
             for dx, dy in ((0, -1), (-0.8, -0.5), (0.8, -0.5)):
-                p.drawLine(QPointF(c.x() + dx * fw * 0.2, c.y() + dy * fw * 0.2),
-                           QPointF(c.x() + dx * fw * 0.45, c.y() + dy * fw * 0.45))
+                p.drawLine(
+                    QPointF(c.x() + dx * fw * 0.2, c.y() + dy * fw * 0.2),
+                    QPointF(c.x() + dx * fw * 0.45, c.y() + dy * fw * 0.45),
+                )

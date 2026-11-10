@@ -3,6 +3,7 @@
 Finger codes: L/R for the hand, then 5=pinky, 4=ring, 3=middle, 2=pointer,
 T=thumb.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -20,8 +21,7 @@ FINGER_NAMES = {
     "R5": "right pinky",
 }
 
-HOME_KEYS = {"L5": "a", "L4": "s", "L3": "d", "L2": "f",
-             "R2": "j", "R3": "k", "R4": "l", "R5": ";"}
+HOME_KEYS = {"L5": "a", "L4": "s", "L3": "d", "L2": "f", "R2": "j", "R3": "k", "R4": "l", "R5": ";"}
 
 _FINGER_CHARS = {
     "L5": "`1qaz",
@@ -71,13 +71,22 @@ SPACE = Key(ident="space", label="", normal=" ", width=6.25, fingers=("LT", "RT"
 ROWS: tuple[tuple[Key, ...], ...] = (
     (*map(_char, "`1234567890-="), _special("backspace", "Backspace", 2.0, ("R5",))),
     (_special("tab", "Tab", 1.5, ("L5",)), *map(_char, "qwertyuiop[]"), _char("\\", 1.5)),
-    (_special("caps", "Caps Lock", 1.75, ("L5",)), *map(_char, "asdfghjkl;'"),
-     _special("enter", "Enter", 2.25, ("R5",))),
+    (
+        _special("caps", "Caps Lock", 1.75, ("L5",)),
+        *map(_char, "asdfghjkl;'"),
+        _special("enter", "Enter", 2.25, ("R5",)),
+    ),
     (LEFT_SHIFT, *map(_char, "zxcvbnm,./"), RIGHT_SHIFT),
-    (_special("lctrl", "Ctrl", 1.25), _special("lsuper", "", 1.25),
-     _special("lalt", "Alt", 1.25), SPACE, _special("ralt", "Alt", 1.25),
-     _special("rsuper", "", 1.25), _special("menu", "", 1.25),
-     _special("rctrl", "Ctrl", 1.25)),
+    (
+        _special("lctrl", "Ctrl", 1.25),
+        _special("lsuper", "", 1.25),
+        _special("lalt", "Alt", 1.25),
+        SPACE,
+        _special("ralt", "Alt", 1.25),
+        _special("rsuper", "", 1.25),
+        _special("menu", "", 1.25),
+        _special("rctrl", "Ctrl", 1.25),
+    ),
 )
 ROW_UNITS = 15.0
 
@@ -115,9 +124,15 @@ def finger_hint(ch: str) -> str:
 
 
 def char_name(ch: str) -> str:
-    names = {" ": "SPACE", ";": "; (semicolon)", "'": "' (apostrophe)",
-             ",": ", (comma)", ".": ". (full stop)", "/": "/ (slash)",
-             "?": "? (question mark)"}
+    names = {
+        " ": "SPACE",
+        ";": "; (semicolon)",
+        "'": "' (apostrophe)",
+        ",": ", (comma)",
+        ".": ". (full stop)",
+        "/": "/ (slash)",
+        "?": "? (question mark)",
+    }
     if ch in names:
         return names[ch]
     if ch.isalpha():

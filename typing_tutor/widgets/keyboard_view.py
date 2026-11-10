@@ -1,4 +1,5 @@
 """On-screen keyboard, coloured by finger, with the next key pulsing."""
+
 from __future__ import annotations
 
 import math
@@ -68,8 +69,12 @@ class KeyboardView(QWidget):
         for r, row in enumerate(ROWS):
             x = 0.0
             for key in row:
-                rect = QRectF(x0 + x * unit + gap / 2, y0 + r * unit + gap / 2,
-                              key.width * unit - gap, unit - gap)
+                rect = QRectF(
+                    x0 + x * unit + gap / 2,
+                    y0 + r * unit + gap / 2,
+                    key.width * unit - gap,
+                    unit - gap,
+                )
                 placed.append((key, rect))
                 x += key.width
 
@@ -110,8 +115,10 @@ class KeyboardView(QWidget):
             pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             p.setPen(pen)
             y = rect.bottom() - rect.height() * 0.2
-            p.drawLine(QPointF(rect.center().x() - unit * 0.1, y),
-                       QPointF(rect.center().x() + unit * 0.1, y))
+            p.drawLine(
+                QPointF(rect.center().x() - unit * 0.1, y),
+                QPointF(rect.center().x() + unit * 0.1, y),
+            )
 
         if key.label:
             p.setPen(QColor(INK))

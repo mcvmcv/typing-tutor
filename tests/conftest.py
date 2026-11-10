@@ -1,4 +1,5 @@
 """Shared fixtures. Tests never touch the real save file or ~/.cache."""
+
 from __future__ import annotations
 
 import os
@@ -35,6 +36,7 @@ class FakeClock:
 def themed_app(qapp):
     """Test the screens with the real stylesheet and palette."""
     from typing_tutor.theme import apply_theme
+
     apply_theme(qapp)
     return qapp
 
@@ -67,8 +69,14 @@ def player(store) -> Profile:
     return store.add("Sam", "#64b5f6")
 
 
-def finish_steps(store: ProfileStore, profile: Profile, count: int,
-                 wpm: float = 12, accuracy: float = 96, stars: int = 3) -> None:
+def finish_steps(
+    store: ProfileStore,
+    profile: Profile,
+    count: int,
+    wpm: float = 12,
+    accuracy: float = 96,
+    stars: int = 3,
+) -> None:
     """Mark the first `count` course steps as finished."""
     for lesson, i in ALL_STEPS[:count]:
         store.record_result(profile.id, lesson.step_id(i), wpm, accuracy, stars)

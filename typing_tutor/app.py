@@ -1,4 +1,5 @@
 """Main window and application entry point."""
+
 from __future__ import annotations
 
 import sys
@@ -50,8 +51,7 @@ class MainWindow(QMainWindow):
         self.game.menu_requested.connect(self.show_menu)
         self.practice.menu_requested.connect(self.show_menu)
         self.practice.step_completed.connect(self._record)
-        self.practice.sound_toggled.connect(
-            lambda on: self.store.set_sound(self.profile.id, on))
+        self.practice.sound_toggled.connect(lambda on: self.store.set_sound(self.profile.id, on))
 
     @property
     def profile(self) -> Profile:
@@ -114,8 +114,14 @@ class MainWindow(QMainWindow):
             self.menu.refresh()
 
     def _record(self, result: StepResult) -> None:
-        self.store.record_result(self.profile.id, result.step_id, result.wpm,
-                                 result.accuracy, result.stars, result.key_stats)
+        self.store.record_result(
+            self.profile.id,
+            result.step_id,
+            result.wpm,
+            result.accuracy,
+            result.stars,
+            result.key_stats,
+        )
 
 
 def main() -> int:  # pragma: no cover - starts the real app

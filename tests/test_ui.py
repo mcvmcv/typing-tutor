@@ -1,4 +1,5 @@
 """End-to-end tests that drive the real screens with simulated key presses."""
+
 from __future__ import annotations
 
 import pytest
@@ -67,6 +68,7 @@ def type_whole_step(qtbot, screen):
 
 # Players ---------------------------------------------------------------------
 
+
 def test_new_player_dialog_validates_names(qtbot, store, player):
     dlg = NewPlayerDialog(store)
     qtbot.addWidget(dlg)
@@ -76,7 +78,7 @@ def test_new_player_dialog_validates_names(qtbot, store, player):
     dlg.name_edit.setText("Ava")
     dlg.speed.setCurrentIndex(3)
     assert dlg.ok.isEnabled() and dlg.speed_goal() == 20
-    assert dlg.color() != player.color          # suggests a colour not yet taken
+    assert dlg.color() != player.color  # suggests a colour not yet taken
 
 
 def test_choosing_a_player_opens_their_menu(window, player):
@@ -87,8 +89,8 @@ def test_choosing_a_player_opens_their_menu(window, player):
 
 # Practice ----------------------------------------------------------------------
 
-def test_finishing_a_step_saves_stars_and_unlocks_the_next(qtbot, window, player, results,
-                                                           played):
+
+def test_finishing_a_step_saves_stars_and_unlocks_the_next(qtbot, window, player, results, played):
     window.start_step(HOME_ROW, 0)
     screen = window.practice
     lines = list(screen._run.lines)
@@ -135,8 +137,9 @@ def test_held_keys_do_not_repeat(qtbot, window):
     window.start_step(HOME_ROW, 0)
     screen = window.practice
     qtbot.keyPress(screen, Qt.Key.Key_K, Qt.KeyboardModifier.NoModifier)
-    repeat = QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_K, Qt.KeyboardModifier.NoModifier,
-                       "k", True)
+    repeat = QKeyEvent(
+        QEvent.Type.KeyPress, Qt.Key.Key_K, Qt.KeyboardModifier.NoModifier, "k", True
+    )
     QApplication.sendEvent(screen, repeat)
     assert screen._run.mistakes == 1
 
@@ -157,6 +160,7 @@ def test_speed_goal_shows_next_to_live_speed(window, store, player):
 
 
 # Menu, review, settings ----------------------------------------------------------
+
 
 def test_tricky_keys_panel_and_review(qtbot, window, store, player, results):
     finish_steps(store, player, 9)
@@ -196,6 +200,7 @@ def test_menu_locks_future_steps(window, store, player):
 
 # Progress ------------------------------------------------------------------------
 
+
 def test_progress_screen(qtbot, window, store, player):
     finish_steps(store, player, 5)
     window.menu.progress_requested.emit()
@@ -216,6 +221,7 @@ def test_progress_chart_empty_state(window):
 
 
 # Game ----------------------------------------------------------------------------
+
 
 def test_game_button_unlocks_after_home_row_step_five(window, store, player):
     assert not window.menu.game_btn.isEnabled()
@@ -260,9 +266,10 @@ def test_every_step_can_be_opened(window):
 
 # Dialogs and drawing paths ------------------------------------------------------------
 
+
 def test_saving_settings_updates_the_player(monkeypatch, window, player):
     def fake_exec(dialog):
-        dialog.speed.setCurrentIndex(5)          # 30 WPM
+        dialog.speed.setCurrentIndex(5)  # 30 WPM
         dialog.clicks.setChecked(False)
         return QDialog.DialogCode.Accepted
 
@@ -293,7 +300,7 @@ def test_removing_a_player_asks_first(monkeypatch, window, store, player):
     monkeypatch.setattr(QMessageBox, "question", lambda *a, **k: next(answers))
     window.show_profiles()
     assert window.profiles.confirm_remove(player) is False
-    assert store.get(player.id) is not None          # said no
+    assert store.get(player.id) is not None  # said no
     assert window.profiles.confirm_remove(player) is True
     assert store.get(player.id) is None and window.profiles.grid.count() == 0
 
@@ -303,7 +310,7 @@ def test_chart_draws_goal_line_and_tooltip(qtbot, window, store, player):
     finish_steps(store, player, 6)
     window.show_progress()
     chart = window.progress.chart
-    qtbot.mouseMove(chart, QPoint(chart.width() - 5, 60))   # tooltip flips to the left
+    qtbot.mouseMove(chart, QPoint(chart.width() - 5, 60))  # tooltip flips to the left
     image = chart.grab().toImage()
     assert chart._hover == 5 and not image.isNull()
     chart.leaveEvent(None)
@@ -320,8 +327,8 @@ def test_game_draws_pops_and_game_over(qtbot, window, store, player):
         game._handle(state.update(0.1))
     balloon = min((b for b in state.balloons if b.active), key=lambda b: b.y)
     type_into(qtbot, game, balloon.word[:1])
-    assert not game.grab().toImage().isNull()          # targeted balloon
+    assert not game.grab().toImage().isNull()  # targeted balloon
     type_into(qtbot, game, balloon.word[1:])
     for _ in range(3):
         game._tick()
-    assert not game.grab().toImage().isNull()          # pop burst and points
+    assert not game.grab().toImage().isNull()  # pop burst and points

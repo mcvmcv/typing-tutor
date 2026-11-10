@@ -38,8 +38,8 @@ def test_common_characters_have_a_key_and_finger(ch):
 
 
 def test_capitals_use_shift_on_the_other_hand():
-    assert keys_for_char("J")[1] is LEFT_SHIFT     # J is right hand
-    assert keys_for_char("F")[1] is RIGHT_SHIFT    # F is left hand
+    assert keys_for_char("J")[1] is LEFT_SHIFT  # J is right hand
+    assert keys_for_char("F")[1] is RIGHT_SHIFT  # F is left hand
     assert fingers_for_char("J") == ("R2", "L5")
 
 
@@ -55,8 +55,15 @@ def test_finger_hints():
     assert finger_hint("€") == ""
 
 
-@pytest.mark.parametrize(("ch", "name"), [
-    ("f", "F"), ("F", "capital F"), (" ", "SPACE"), (";", "; (semicolon)"), ("7", "7"),
-])
+@pytest.mark.parametrize(
+    ("ch", "name"),
+    [
+        ("f", "F"),
+        ("F", "capital F"),
+        (" ", "SPACE"),
+        (";", "; (semicolon)"),
+        ("7", "7"),
+    ],
+)
 def test_char_names(ch, name):
     assert char_name(ch) == name

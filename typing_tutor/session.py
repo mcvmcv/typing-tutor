@@ -1,16 +1,17 @@
 """Typing logic for one step, independent of the UI."""
+
 from __future__ import annotations
 
 import time
 from enum import Enum
 
-MAX_KEY_GAP = 3.0   # seconds; slower keystrokes aren't counted toward key speed
+MAX_KEY_GAP = 3.0  # seconds; slower keystrokes aren't counted toward key speed
 
 
 class CharState(Enum):
     PENDING = 0
-    CORRECT = 1     # typed right on the first try
-    CORRECTED = 2   # typed right after at least one mistake
+    CORRECT = 1  # typed right on the first try
+    CORRECTED = 2  # typed right after at least one mistake
 
 
 class TypingSession:

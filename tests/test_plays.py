@@ -34,8 +34,8 @@ def test_no_tricky_keys_without_enough_data(store, player):
 def test_finds_keys_that_are_missed_or_slow(store, player):
     finish_steps(store, player, 9)
     stats = {c: key_stat(30) for c in HOME_ROW_KEYS}
-    stats["k"] = key_stat(30, misses=8)                 # often missed
-    stats[";"] = key_stat(30, seconds_per_key=0.9)      # three times slower
+    stats["k"] = key_stat(30, misses=8)  # often missed
+    stats[";"] = key_stat(30, seconds_per_key=0.9)  # three times slower
     give_key_stats(store, player, stats)
     assert set(weak_keys(player)) == {"k", ";"}
 
@@ -65,7 +65,7 @@ def test_review_lines_drill_the_weak_keys_with_known_keys_only(store, player):
 def test_speed_goal_is_lower_for_key_drills(store, player):
     store.set_speed_goal(player.id, 20)
     assert lesson_play(TOP_ROW, 0, player).speed_goal == round(20 * DRILL_SPEED_SHARE)
-    assert lesson_play(TOP_ROW, 5, player).speed_goal == 20   # a words step
+    assert lesson_play(TOP_ROW, 5, player).speed_goal == 20  # a words step
 
 
 def test_no_speed_goal_by_default(player):

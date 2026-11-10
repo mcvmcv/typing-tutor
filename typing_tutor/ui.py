@@ -4,6 +4,7 @@ PySide6 accepts Qt properties as constructor keywords (``QLabel(objectName=...)`
 but its type stubs don't, so these helpers set them explicitly and keep the
 screens tidy and type-checked.
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -27,8 +28,9 @@ def frame(name: str, parent: QWidget | None = None) -> QFrame:
     return widget
 
 
-def timer(parent: QObject, interval_ms: int, callback: Callable[[], None],
-          single_shot: bool = False) -> QTimer:
+def timer(
+    parent: QObject, interval_ms: int, callback: Callable[[], None], single_shot: bool = False
+) -> QTimer:
     t = QTimer(parent)
     t.setInterval(interval_ms)
     t.setSingleShot(single_shot)

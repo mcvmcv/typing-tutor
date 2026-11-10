@@ -4,6 +4,7 @@ Balloons carrying words rise from the bottom (y=1) to the top (y=0). Typing a
 word's first letter targets that balloon; finishing the word pops it. A balloon
 that floats off the top costs a life.
 """
+
 from __future__ import annotations
 
 import random
@@ -15,7 +16,7 @@ from .wordlist import WORDS
 LIVES = 3
 POPS_PER_LEVEL = 8
 MAX_BALLOONS = 6
-MIN_WORDS = 8          # the game needs this many typeable words to unlock
+MIN_WORDS = 8  # the game needs this many typeable words to unlock
 START_Y, ESCAPE_Y = 1.15, -0.12
 
 
@@ -23,8 +24,8 @@ START_Y, ESCAPE_Y = 1.15, -0.12
 class Difficulty:
     key: str
     label: str
-    rise_seconds: float    # time to cross the screen at level 1
-    spawn_seconds: float   # time between balloons at level 1
+    rise_seconds: float  # time to cross the screen at level 1
+    spawn_seconds: float  # time between balloons at level 1
     max_word_len: int
 
 
@@ -38,10 +39,10 @@ DIFFICULTIES = {
 @dataclass
 class Balloon:
     word: str
-    x: float               # 0..1 across the screen
-    y: float               # 0 top .. 1 bottom
-    speed: float           # screen heights per second
-    color: int             # index into the drawing palette
+    x: float  # 0..1 across the screen
+    y: float  # 0 top .. 1 bottom
+    speed: float  # screen heights per second
+    color: int  # index into the drawing palette
     typed: int = 0
     popped_at: float | None = None
 
@@ -52,7 +53,7 @@ class Balloon:
 
 @dataclass
 class Event:
-    kind: str              # "hit", "miss", "pop", "escape", "level", "over"
+    kind: str  # "hit", "miss", "pop", "escape", "level", "over"
     balloon: Balloon | None = None
     points: int = 0
 
@@ -163,7 +164,7 @@ class GameState:
                 self.combo = 0
                 return [Event("miss")]
             target = self.target = min(matches, key=lambda b: b.y)
-            self._last_ok_at = None   # don't time the hunt for a new word
+            self._last_ok_at = None  # don't time the hunt for a new word
         expected = target.word[target.typed]
         stats = self._stats(expected)
         if ch != expected:

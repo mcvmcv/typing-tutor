@@ -1,4 +1,5 @@
 """Player profiles and progress, saved as JSON in the user's data folder."""
+
 from __future__ import annotations
 
 import json
@@ -52,8 +53,7 @@ class ProfileStore:
 
     @staticmethod
     def default_path() -> Path:
-        base = QStandardPaths.writableLocation(
-            QStandardPaths.StandardLocation.AppDataLocation)
+        base = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.AppDataLocation)
         return Path(base) / "profiles.json"
 
     def load(self) -> None:
@@ -82,8 +82,9 @@ class ProfileStore:
         return any(p.name.casefold() == name.strip().casefold() for p in self.profiles)
 
     def add(self, name: str, color: str, speed_goal: int = 0) -> Profile:
-        profile = Profile(id=uuid.uuid4().hex, name=name.strip(), color=color,
-                          speed_goal=speed_goal)
+        profile = Profile(
+            id=uuid.uuid4().hex, name=name.strip(), color=color, speed_goal=speed_goal
+        )
         self.profiles.append(profile)
         self.save()
         return profile
@@ -106,8 +107,7 @@ class ProfileStore:
                 profile.key_clicks = key_clicks
             self.save()
 
-    def record_game(self, profile_id: str, difficulty: str, score: int,
-                    key_stats: dict) -> bool:
+    def record_game(self, profile_id: str, difficulty: str, score: int, key_stats: dict) -> bool:
         """Save a finished game. Returns True if it's a new best score."""
         profile = self.get(profile_id)
         if profile is None:
@@ -128,17 +128,29 @@ class ProfileStore:
                 for f in ("h", "m", "t", "n"):
                     s[f] /= 2
 
-    def record_result(self, profile_id: str, step_id: str, wpm: float,
-                      accuracy: float, stars: int, key_stats: dict | None = None) -> None:
+    def record_result(
+        self,
+        profile_id: str,
+        step_id: str,
+        wpm: float,
+        accuracy: float,
+        stars: int,
+        key_stats: dict | None = None,
+    ) -> None:
         profile = self.get(profile_id)
         if profile is None:
             return
         self._merge_key_stats(profile, key_stats)
         wpm, accuracy = round(wpm, 1), round(accuracy, 1)
-        profile.history.append({
-            "step": step_id, "wpm": wpm, "accuracy": accuracy, "stars": stars,
-            "when": datetime.now().isoformat(timespec="seconds"),
-        })
+        profile.history.append(
+            {
+                "step": step_id,
+                "wpm": wpm,
+                "accuracy": accuracy,
+                "stars": stars,
+                "when": datetime.now().isoformat(timespec="seconds"),
+            }
+        )
         best = profile.best.setdefault(step_id, {"stars": 0, "wpm": 0.0, "accuracy": 0.0})
         best["stars"] = max(best["stars"], stars)
         best["wpm"] = max(best["wpm"], wpm)

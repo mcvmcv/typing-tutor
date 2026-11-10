@@ -16,7 +16,7 @@ def test_generated_lines_only_use_taught_keys(lesson, index):
     for seed in range(25):
         lines = build_lines(lesson, index, random.Random(seed))
         assert len(lines) == step.line_count
-        assert lines[:len(step.lines)] == list(step.lines)
+        assert lines[: len(step.lines)] == list(step.lines)
         for line in lines:
             assert line and line == line.strip() and "  " not in line
             assert set(line) <= known, set(line) - known

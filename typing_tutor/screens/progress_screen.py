@@ -1,4 +1,5 @@
 """A player's progress: summary tiles, speed chart and recent practice."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -123,7 +124,8 @@ class ProgressScreen(QWidget):
         s = summary(profile)
         self.best.value.setText(f"{s.best_wpm:.0f} WPM" if s.best_wpm else "–")
         self.accuracy.value.setText(
-            f"{s.recent_accuracy:.0f}%" if s.recent_accuracy is not None else "–")
+            f"{s.recent_accuracy:.0f}%" if s.recent_accuracy is not None else "–"
+        )
         self.stars.value.setText(f"{s.stars} of {s.max_stars}")
         self.steps.value.setText(f"{s.steps_done} of {s.total_steps}")
         self.days.value.setText(str(s.practice_days))

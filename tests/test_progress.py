@@ -12,8 +12,9 @@ from typing_tutor.progress import (
 
 
 def add_attempt(profile, step, wpm, accuracy, when, stars=3):
-    profile.history.append({"step": step, "wpm": wpm, "accuracy": accuracy,
-                            "stars": stars, "when": when})
+    profile.history.append(
+        {"step": step, "wpm": wpm, "accuracy": accuracy, "stars": stars, "when": when}
+    )
 
 
 def test_points_by_day_average_each_day(player):
@@ -44,7 +45,7 @@ def test_summary(store, player):
     first, second = (lesson.step_id(i) for lesson, i in ALL_STEPS[:2])
     store.record_result(player.id, first, 10, 90, 2)
     store.record_result(player.id, second, 14, 98, 3)
-    store.record_result(player.id, "review", 30, 100, 3)   # reviews aren't course steps
+    store.record_result(player.id, "review", 30, 100, 3)  # reviews aren't course steps
     s = summary(player)
     assert s.best_wpm == 14
     assert s.stars == 5 and s.max_stars == 120

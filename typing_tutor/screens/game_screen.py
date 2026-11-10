@@ -1,4 +1,5 @@
 """Balloon Pop game screen: drawing, keyboard input and the start/pause/end panel."""
+
 from __future__ import annotations
 
 import math
@@ -23,8 +24,16 @@ from ..sounds import SoundPlayer
 from ..theme import BAD, INK, MUTED, mix
 from ..ui import label, timer
 
-BALLOON_COLORS = ("#ff6b6b", "#ffb347", "#ffd93d", "#6bcB77", "#4d96ff",
-                  "#b37feb", "#ff8fc7", "#3cc6c0")
+BALLOON_COLORS = (
+    "#ff6b6b",
+    "#ffb347",
+    "#ffd93d",
+    "#6bcB77",
+    "#4d96ff",
+    "#b37feb",
+    "#ff8fc7",
+    "#3cc6c0",
+)
 TYPED = QColor("#1e7a34")
 GRASS_H = 34
 HUD_H = 64
@@ -36,6 +45,7 @@ RecordGame = Callable[[str, int, dict], tuple[bool, int]]
 
 class GamePanel(QFrame):
     """The card shown before a game, when paused, and after game over."""
+
     difficulty_chosen = Signal(str)
     resume_requested = Signal()
     quit_requested = Signal()
@@ -80,8 +90,9 @@ class GamePanel(QFrame):
         layout.addLayout(self.difficulty_row)
         layout.addLayout(bottom)
 
-    def show_choices(self, title: str, message: str, best: dict[str, int],
-                     paused: bool = False) -> None:
+    def show_choices(
+        self, title: str, message: str, best: dict[str, int], paused: bool = False
+    ) -> None:
         self.title.setText(title)
         self.message.setText(message)
         for key, btn in self.difficulty_buttons.items():
@@ -106,10 +117,12 @@ class GameScreen(QWidget):
         self._best: dict[str, int] = {}
         self.state: GameState | None = None
         self._paused = False
-        self._points: dict[int, int] = {}       # id(balloon) -> points for pop label
-        self._shake = 0.0                       # brief wobble when a key is wrong
-        self._clouds = [(random.random(), 0.12 + 0.25 * random.random(),
-                         0.6 + 0.6 * random.random()) for _ in range(5)]
+        self._points: dict[int, int] = {}  # id(balloon) -> points for pop label
+        self._shake = 0.0  # brief wobble when a key is wrong
+        self._clouds = [
+            (random.random(), 0.12 + 0.25 * random.random(), 0.6 + 0.6 * random.random())
+            for _ in range(5)
+        ]
         self._scenery_time = 0.0
 
         self.quit_btn = QPushButton("←  Lessons", self)
@@ -135,10 +148,10 @@ class GameScreen(QWidget):
         self._paused = False
         self.panel.show_choices(
             "Balloon Pop!",
-            "Type the word on a balloon to pop it.<br>"
-            "Don't let <b>3 balloons</b> float away!",
-            self._best)
-        self._timer.start()          # keep the clouds drifting behind the panel
+            "Type the word on a balloon to pop it.<br>Don't let <b>3 balloons</b> float away!",
+            self._best,
+        )
+        self._timer.start()  # keep the clouds drifting behind the panel
         self._clock.restart()
         self.setFocus()
         self._layout_children()
@@ -161,7 +174,7 @@ class GameScreen(QWidget):
         s = self.state
         if s is not None and not self._paused:
             if s.over:
-                s.time += dt          # let the last animations finish
+                s.time += dt  # let the last animations finish
             else:
                 self._handle(s.update(dt))
         self.update()
@@ -194,12 +207,13 @@ class GameScreen(QWidget):
             is_best, best_score = self.record_game(key, s.score, s.key_stats)
         self._best[key] = best_score
         words = "1 balloon" if s.popped == 1 else f"{s.popped} balloons"
-        lines = [f"You popped <b>{words}</b> and scored <b>{s.score}</b> points.",
-                 f"Level {s.level} · {s.wpm():.0f} WPM"]
+        lines = [
+            f"You popped <b>{words}</b> and scored <b>{s.score}</b> points.",
+            f"Level {s.level} · {s.wpm():.0f} WPM",
+        ]
         if is_best:
             lines.insert(0, "<span style='color:#e08a00'><b>New best score!</b></span>")
-        self.panel.show_choices("Game over", "<br>".join(lines) + "<br><br>Play again?",
-                                self._best)
+        self.panel.show_choices("Game over", "<br>".join(lines) + "<br><br>Play again?", self._best)
         self._layout_children()
 
     # Input ----------------------------------------------------------------
@@ -219,24 +233,35 @@ class GameScreen(QWidget):
                 self._pause()
             return
         text = event.text()
-        if self._paused or event.isAutoRepeat() or len(text) != 1 \
-                or not text.isprintable() or text == " ":
+        if (
+            self._paused
+            or event.isAutoRepeat()
+            or len(text) != 1
+            or not text.isprintable()
+            or text == " "
+        ):
             super().keyPressEvent(event)
             return
         self._handle(s.type(text))
 
     def changeEvent(self, event) -> None:
         # Pause automatically if the window loses focus mid-game.
-        if (event.type() == QEvent.Type.ActivationChange and not self.isActiveWindow()
-                and self.state is not None and not self.state.over
-                and not self._paused and self.isVisible()):
+        if (
+            event.type() == QEvent.Type.ActivationChange
+            and not self.isActiveWindow()
+            and self.state is not None
+            and not self.state.over
+            and not self._paused
+            and self.isVisible()
+        ):
             self._pause()
         super().changeEvent(event)
 
     def _pause(self) -> None:
         self._paused = True
-        self.panel.show_choices("Paused", "Press Esc or click to keep playing.",
-                                self._best, paused=True)
+        self.panel.show_choices(
+            "Paused", "Press Esc or click to keep playing.", self._best, paused=True
+        )
         self._layout_children()
 
     def _resume(self) -> None:
@@ -331,8 +356,11 @@ class GameScreen(QWidget):
         # String, gently swaying.
         sway = math.sin(s.time * 2 + b.x * 10) * 8
         string = QPainterPath(QPointF(cx, cy + ry + 6))
-        string.cubicTo(QPointF(cx + sway, cy + ry + 30), QPointF(cx - sway, cy + ry + 50),
-                       QPointF(cx + sway * 0.5, cy + ry + 70))
+        string.cubicTo(
+            QPointF(cx + sway, cy + ry + 30),
+            QPointF(cx - sway, cy + ry + 50),
+            QPointF(cx + sway * 0.5, cy + ry + 70),
+        )
         p.setPen(QPen(QColor("#7a7062"), 1.5))
         p.setBrush(Qt.BrushStyle.NoBrush)
         p.drawPath(string)
@@ -362,7 +390,7 @@ class GameScreen(QWidget):
         p.setFont(font)
         x = cx - tw / 2
         baseline = cy + (fm.ascent() - fm.descent()) / 2
-        done, rest = b.word[:b.typed], b.word[b.typed:]
+        done, rest = b.word[: b.typed], b.word[b.typed :]
         p.setPen(TYPED)
         p.drawText(QPointF(x, baseline), done)
         p.setPen(QColor(INK))
@@ -370,11 +398,13 @@ class GameScreen(QWidget):
         if b is s.target and rest:
             nx = x + fm.horizontalAdvance(done)
             p.setPen(QPen(QColor(INK), 2.5))
-            p.drawLine(QPointF(nx, baseline + 5),
-                       QPointF(nx + fm.horizontalAdvance(rest[0]), baseline + 5))
+            p.drawLine(
+                QPointF(nx, baseline + 5), QPointF(nx + fm.horizontalAdvance(rest[0]), baseline + 5)
+            )
 
-    def _draw_pop(self, p: QPainter, b: Balloon, cx: float, cy: float, rx: float,
-                  s: GameState) -> None:
+    def _draw_pop(
+        self, p: QPainter, b: Balloon, cx: float, cy: float, rx: float, s: GameState
+    ) -> None:
         age = min(POP_ANIM, s.time - (b.popped_at or s.time))
         k = age / POP_ANIM
         alpha = int(255 * (1 - k))
@@ -386,8 +416,10 @@ class GameScreen(QWidget):
         for i in range(10):
             a = i * math.pi / 5
             r1, r2 = rx * (0.4 + k), rx * (0.7 + 1.2 * k)
-            p.drawLine(QPointF(cx + math.cos(a) * r1, cy + math.sin(a) * r1),
-                       QPointF(cx + math.cos(a) * r2, cy + math.sin(a) * r2))
+            p.drawLine(
+                QPointF(cx + math.cos(a) * r1, cy + math.sin(a) * r1),
+                QPointF(cx + math.cos(a) * r2, cy + math.sin(a) * r2),
+            )
         points = self._points.get(id(b))
         if points:
             font = self._balloon_font()
@@ -395,8 +427,11 @@ class GameScreen(QWidget):
             ink = QColor(INK)
             ink.setAlpha(alpha)
             p.setPen(ink)
-            p.drawText(QRectF(cx - 60, cy - 20 - 50 * k, 120, 40),
-                       Qt.AlignmentFlag.AlignCenter, f"+{points}")
+            p.drawText(
+                QRectF(cx - 60, cy - 20 - 50 * k, 120, 40),
+                Qt.AlignmentFlag.AlignCenter,
+                f"+{points}",
+            )
 
     def _draw_hud(self, p: QPainter, w: int, s: GameState | None) -> None:
         p.setPen(Qt.PenStyle.NoPen)
@@ -414,20 +449,26 @@ class GameScreen(QWidget):
         p.drawText(QRectF(0, 0, w, HUD_H), Qt.AlignmentFlag.AlignCenter, f"Score {s.score}")
         p.setFont(small)
         p.setPen(QColor(MUTED))
-        p.drawText(QRectF(w - 480, 0, 300, HUD_H),
-                   Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
-                   f"Level {s.level}   ·   Esc pauses")
+        p.drawText(
+            QRectF(w - 480, 0, 300, HUD_H),
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+            f"Level {s.level}   ·   Esc pauses",
+        )
         for i in range(3):
             self._draw_heart(p, QPointF(w - 150 + i * 42, HUD_H / 2), 15, i < s.lives)
 
     def _draw_heart(self, p: QPainter, c: QPointF, r: float, full: bool) -> None:
         path = QPainterPath(QPointF(c.x(), c.y() + r))
-        path.cubicTo(QPointF(c.x() - r * 1.6, c.y() - r * 0.2),
-                     QPointF(c.x() - r * 0.7, c.y() - r * 1.4),
-                     QPointF(c.x(), c.y() - r * 0.5))
-        path.cubicTo(QPointF(c.x() + r * 0.7, c.y() - r * 1.4),
-                     QPointF(c.x() + r * 1.6, c.y() - r * 0.2),
-                     QPointF(c.x(), c.y() + r))
+        path.cubicTo(
+            QPointF(c.x() - r * 1.6, c.y() - r * 0.2),
+            QPointF(c.x() - r * 0.7, c.y() - r * 1.4),
+            QPointF(c.x(), c.y() - r * 0.5),
+        )
+        path.cubicTo(
+            QPointF(c.x() + r * 0.7, c.y() - r * 1.4),
+            QPointF(c.x() + r * 1.6, c.y() - r * 0.2),
+            QPointF(c.x(), c.y() + r),
+        )
         if full:
             p.setPen(QPen(QColor(BAD).darker(120), 1.5))
             p.setBrush(QColor(BAD))

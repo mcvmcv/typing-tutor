@@ -41,7 +41,7 @@ def test_accuracy_is_full_before_typing():
 
 def test_wpm_uses_five_characters_per_word(clock):
     s = TypingSession("a" * 11, clock)
-    s.press("a")                      # starts the timer
+    s.press("a")  # starts the timer
     type_text(s, "a" * 10, clock, gap=1.2)
     # 11 chars in 12 seconds = 2.2 words in 0.2 minutes
     assert s.wpm() == pytest.approx(11.0)
@@ -89,30 +89,34 @@ def test_step_run_speed_ignores_the_pause_between_lines(clock):
     run = StepRun(["aaaaa", "aaaaa"], clock)
     type_text(run.current, "aaaaa", clock, gap=1.0)
     run.advance()
-    clock.advance(60)                 # a long break between lines
+    clock.advance(60)  # a long break between lines
     type_text(run.current, "aaaaa", clock, gap=1.0)
     # 10 chars over 8 seconds of actual typing (first key of each line starts its timer)
     assert run.wpm() == pytest.approx((10 / 5) / (8 / 60))
 
 
-@pytest.mark.parametrize(("accuracy", "wpm", "goal", "stars"), [
-    (98, 0, 0, 3),
-    (95, 0, 0, 3),
-    (90, 0, 0, 2),
-    (85, 0, 0, 2),
-    (70, 0, 0, 1),
-    (98, 25, 20, 3),   # goal reached
-    (98, 14, 20, 2),   # at least 70% of the goal
-    (98, 13, 20, 1),
-    (80, 50, 20, 1),   # speed can't make up for accuracy
-])
+@pytest.mark.parametrize(
+    ("accuracy", "wpm", "goal", "stars"),
+    [
+        (98, 0, 0, 3),
+        (95, 0, 0, 3),
+        (90, 0, 0, 2),
+        (85, 0, 0, 2),
+        (70, 0, 0, 1),
+        (98, 25, 20, 3),  # goal reached
+        (98, 14, 20, 2),  # at least 70% of the goal
+        (98, 13, 20, 1),
+        (80, 50, 20, 1),  # speed can't make up for accuracy
+    ],
+)
 def test_stars(accuracy, wpm, goal, stars):
     assert stars_for(accuracy, wpm, goal) == stars
 
 
 def test_merge_key_stats_adds_fields():
     into = {"a": {"h": 1, "m": 1, "t": 0.5, "n": 1}}
-    merge_key_stats(into, {"a": {"h": 2, "m": 0, "t": 1.0, "n": 2},
-                           "b": {"h": 1, "m": 0, "t": 0.0, "n": 0}})
+    merge_key_stats(
+        into, {"a": {"h": 2, "m": 0, "t": 1.0, "n": 2}, "b": {"h": 1, "m": 0, "t": 0.0, "n": 0}}
+    )
     assert into["a"] == {"h": 3, "m": 1, "t": 1.5, "n": 3}
     assert into["b"]["h"] == 1

@@ -1,4 +1,5 @@
 """'Who's typing today?' screen and the new-player dialog."""
+
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
@@ -47,8 +48,10 @@ class SpeedGoalPicker(QComboBox):
         return self.currentData()
 
 
-SPEED_HELP = ("With a speed goal, 3 stars needs good speed as well as accuracy. "
-              "Leave it off while learning where the keys are.")
+SPEED_HELP = (
+    "With a speed goal, 3 stars needs good speed as well as accuracy. "
+    "Leave it off while learning where the keys are."
+)
 
 
 class ProfileScreen(QWidget):
@@ -108,11 +111,11 @@ class ProfileScreen(QWidget):
         btn.setStyleSheet(
             f"QPushButton {{ background: {profile.color}; border-radius: 80px;"
             f" font-size: 22px; color: {INK}; border: 4px solid white; }}"
-            f"QPushButton:hover {{ border: 4px solid {INK}; }}")
+            f"QPushButton:hover {{ border: 4px solid {INK}; }}"
+        )
         btn.clicked.connect(lambda: self.profile_chosen.emit(profile.id))
         btn.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        btn.customContextMenuRequested.connect(
-            lambda pos: self._context_menu(btn, pos, profile))
+        btn.customContextMenuRequested.connect(lambda pos: self._context_menu(btn, pos, profile))
         return btn
 
     def _context_menu(self, btn: QPushButton, pos, profile: Profile) -> None:
@@ -124,8 +127,10 @@ class ProfileScreen(QWidget):
     def confirm_remove(self, profile: Profile) -> bool:
         """Ask before deleting a player and all their progress."""
         answer = QMessageBox.question(
-            self, "Remove player",
-            f"Remove {profile.name} and all their progress?\nThis can't be undone.")
+            self,
+            "Remove player",
+            f"Remove {profile.name} and all their progress?\nThis can't be undone.",
+        )
         if answer != QMessageBox.StandardButton.Yes:
             return False
         self.store.delete(profile.id)
@@ -162,7 +167,8 @@ class NewPlayerDialog(QDialog):
             sw.setStyleSheet(
                 f"QPushButton {{ background: {color}; border-radius: 22px;"
                 f" border: 3px solid white; padding: 0; }}"
-                f"QPushButton:checked {{ border: 4px solid {INK}; }}")
+                f"QPushButton:checked {{ border: 4px solid {INK}; }}"
+            )
             self.colors.addButton(sw, i)
             swatches.addWidget(sw)
         used = {p.color for p in store.profiles}

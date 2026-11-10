@@ -1,4 +1,5 @@
 """Colours and styling. Bright and friendly, always light (ignores dark mode)."""
+
 from __future__ import annotations
 
 from PySide6.QtGui import QColor, QFont, QPalette
@@ -21,8 +22,16 @@ FINGER_COLORS = {
     "T": "#cdb4ff",  # thumb
 }
 
-AVATAR_COLORS = ("#ff8a80", "#ffb74d", "#fff176", "#81c784",
-                 "#64b5f6", "#ba68c8", "#f06292", "#4db6ac")
+AVATAR_COLORS = (
+    "#ff8a80",
+    "#ffb74d",
+    "#fff176",
+    "#81c784",
+    "#64b5f6",
+    "#ba68c8",
+    "#f06292",
+    "#4db6ac",
+)
 
 
 def finger_color(finger: str) -> QColor:

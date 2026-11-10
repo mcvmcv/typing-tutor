@@ -1,4 +1,5 @@
 """Lesson menu: shows each step with stars, locks and a 'keep going' button."""
+
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, QTimer, Signal
@@ -35,7 +36,7 @@ def star_text(stars: int) -> str:
 
 
 class LessonMenuScreen(QWidget):
-    step_chosen = Signal(object, int)   # Lesson, step index
+    step_chosen = Signal(object, int)  # Lesson, step index
     switch_player = Signal()
     review_requested = Signal()
     settings_requested = Signal()
@@ -78,7 +79,8 @@ class LessonMenuScreen(QWidget):
         self.game_btn.setStyleSheet(
             "QPushButton { background: #8fd3ff; font-size: 20px; }"
             "QPushButton:hover { background: #6cc4fb; }"
-            "QPushButton:disabled { background: #ebe4d6; color: #aaa294; font-size: 15px; }")
+            "QPushButton:disabled { background: #ebe4d6; color: #aaa294; font-size: 15px; }"
+        )
         self.game_btn.clicked.connect(self.game_requested)
         actions = QHBoxLayout()
         actions.setSpacing(14)
@@ -134,7 +136,8 @@ class LessonMenuScreen(QWidget):
         self.avatar.setText(profile.name[:1].upper())
         self.avatar.setStyleSheet(
             f"background: {profile.color}; border-radius: 32px; font-size: 30px;"
-            f" font-weight: bold; color: {INK};")
+            f" font-weight: bold; color: {INK};"
+        )
         self.greeting.setText(f"Hi, {profile.name}!")
         self.refresh()
 
@@ -154,8 +157,7 @@ class LessonMenuScreen(QWidget):
         self._refresh_tricky()
         unlocked = len(game_words(known_keys(self.profile))) >= MIN_WORDS
         self.game_btn.setEnabled(unlocked)
-        self.game_btn.setText("Balloon Pop" if unlocked
-                              else "Balloon Pop\nunlocks after step 5")
+        self.game_btn.setText("Balloon Pop" if unlocked else "Balloon Pop\nunlocks after step 5")
         # Wait for the layout to settle, then bring the current step into view.
         QTimer.singleShot(0, self._scroll_to_next)
 
@@ -215,8 +217,7 @@ class LessonMenuScreen(QWidget):
                     state = "open"
                 btn.setProperty("state", state)
                 btn.setCursor(Qt.CursorShape.PointingHandCursor)
-                btn.clicked.connect(
-                    lambda _=False, les=lesson, n=i: self.step_chosen.emit(les, n))
+                btn.clicked.connect(lambda _=False, les=lesson, n=i: self.step_chosen.emit(les, n))
             grid.addWidget(btn, i // COLUMNS, i % COLUMNS)
         layout.addSpacing(6)
         layout.addLayout(grid)

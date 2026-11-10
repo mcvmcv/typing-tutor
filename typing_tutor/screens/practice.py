@@ -1,4 +1,5 @@
 """The practice screen: text, keyboard, hands, and the end-of-step result."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -127,8 +128,13 @@ class PracticeScreen(QWidget):
     def keyPressEvent(self, event) -> None:
         run = self._run
         text = event.text()
-        if run is None or self._finishing or event.isAutoRepeat() or len(text) != 1 \
-                or not text.isprintable():
+        if (
+            run is None
+            or self._finishing
+            or event.isAutoRepeat()
+            or len(text) != 1
+            or not text.isprintable()
+        ):
             super().keyPressEvent(event)
             return
         s = run.current
@@ -153,11 +159,12 @@ class PracticeScreen(QWidget):
             if text.isalpha() and text.lower() == expected:
                 self._set_hint("Oops! Is Caps Lock on? Press Caps Lock to turn it off.")
             elif text.isalpha() and text.upper() == expected:
-                self._set_hint(f"That needs a capital! Hold Shift with your "
-                               f"{finger_hint(expected).split('Shift with your ')[-1]}.")
+                self._set_hint(
+                    f"That needs a capital! Hold Shift with your "
+                    f"{finger_hint(expected).split('Shift with your ')[-1]}."
+                )
             else:
-                self._set_hint(f"Oops! That was {char_name(text)}. "
-                               f"Try {char_name(expected)}.")
+                self._set_hint(f"Oops! That was {char_name(text)}. Try {char_name(expected)}.")
         self._refresh()
 
     def _toggle_sound(self) -> None:
@@ -181,10 +188,8 @@ class PracticeScreen(QWidget):
         self.hands.set_active_fingers(fingers_for_char(expected) if expected else ())
         self.typing.update()
         self.progress.setValue(run.typed_chars)
-        self.step_count.setText(
-            f"{play.header} · line {run.index + 1} of {len(run.lines)}")
-        self.next_line.setText("" if run.on_last_line
-                               else f"Next:  {run.lines[run.index + 1]}")
+        self.step_count.setText(f"{play.header} · line {run.index + 1} of {len(run.lines)}")
+        self.next_line.setText("" if run.on_last_line else f"Next:  {run.lines[run.index + 1]}")
         if self._hint_error:
             self.hint.setText(self._hint_error)
         elif expected is None:
@@ -208,13 +213,19 @@ class PracticeScreen(QWidget):
         run, play = self._current()
         accuracy, wpm = run.accuracy(), run.wpm()
         stars = stars_for(accuracy, wpm, play.speed_goal)
-        self.step_completed.emit(
-            StepResult(play.step_id, wpm, accuracy, stars, run.key_stats()))
+        self.step_completed.emit(StepResult(play.step_id, wpm, accuracy, stars, run.key_stats()))
 
         self.sounds.stars(stars)
         upcoming = play.next_play() if play.next_play else None
-        dlg = ResultDialog(stars, accuracy, wpm, run.mistakes, play.speed_goal,
-                           has_next=upcoming is not None, parent=self)
+        dlg = ResultDialog(
+            stars,
+            accuracy,
+            wpm,
+            run.mistakes,
+            play.speed_goal,
+            has_next=upcoming is not None,
+            parent=self,
+        )
         dlg.exec()
         if dlg.choice == "retry":
             self.start(play)
@@ -232,8 +243,16 @@ class ResultDialog(QDialog):
         1: "Practice makes perfect. Try again for more stars!",
     }
 
-    def __init__(self, stars: int, accuracy: float, wpm: float, mistakes: int,
-                 speed_goal: float, has_next: bool, parent=None):
+    def __init__(
+        self,
+        stars: int,
+        accuracy: float,
+        wpm: float,
+        mistakes: int,
+        speed_goal: float,
+        has_next: bool,
+        parent=None,
+    ):
         super().__init__(parent)
         self.setWindowTitle("Step complete")
         self.setMinimumWidth(480)
@@ -241,7 +260,8 @@ class ResultDialog(QDialog):
 
         star_label = QLabel(
             f'<span style="color:#ffb300">{"★" * stars}</span>'
-            f'<span style="color:#ddd3bf">{"★" * (3 - stars)}</span>')
+            f'<span style="color:#ddd3bf">{"★" * (3 - stars)}</span>'
+        )
         star_label.setStyleSheet("font-size: 72px;")
         star_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title = label(self.MESSAGES[stars], "Title")
@@ -249,8 +269,7 @@ class ResultDialog(QDialog):
         sub = label(self.SUBTEXT[stars], "Subtitle", wrap=True)
         sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
         oops = {0: "no oopses", 1: "1 oops"}.get(mistakes, f"{mistakes} oopses")
-        stats = label(f"Accuracy {accuracy:.0f}%   ·   Speed {wpm:.0f} WPM   ·   {oops}",
-                      "Stat")
+        stats = label(f"Accuracy {accuracy:.0f}%   ·   Speed {wpm:.0f} WPM   ·   {oops}", "Stat")
         stats.setAlignment(Qt.AlignmentFlag.AlignCenter)
         goal_label = label("", "Stat")
         goal_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -258,8 +277,7 @@ class ResultDialog(QDialog):
             if wpm >= speed_goal:
                 goal_label.setText(f"Speed goal {speed_goal:.0f} WPM: reached!")
             else:
-                goal_label.setText(f"Speed goal {speed_goal:.0f} WPM: "
-                                   f"{speed_goal - wpm:.0f} to go")
+                goal_label.setText(f"Speed goal {speed_goal:.0f} WPM: {speed_goal - wpm:.0f} to go")
             if stars < 3 and accuracy >= 95:
                 sub.setText("Super careful! Now try going a little faster for 3 stars.")
         goal_label.setVisible(bool(speed_goal))

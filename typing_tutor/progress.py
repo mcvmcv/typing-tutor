@@ -1,4 +1,5 @@
 """Turns a player's saved history into chart points and summary numbers."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -10,17 +11,18 @@ from .storage import Profile
 
 MAX_ATTEMPT_POINTS = 60
 
-STEP_TITLES = {lesson.step_id(i): f"{lesson.title}: {lesson.steps[i].title}"
-               for lesson, i in ALL_STEPS}
+STEP_TITLES = {
+    lesson.step_id(i): f"{lesson.title}: {lesson.steps[i].title}" for lesson, i in ALL_STEPS
+}
 STEP_TITLES[REVIEW_ID] = "Tricky keys practice"
 
 
 @dataclass(frozen=True)
 class Point:
-    label: str          # short x-axis label, e.g. "10 Nov"
+    label: str  # short x-axis label, e.g. "10 Nov"
     wpm: float
     accuracy: float
-    detail: str         # extra tooltip line
+    detail: str  # extra tooltip line
 
 
 @dataclass(frozen=True)
@@ -53,8 +55,10 @@ def _timed(profile: Profile) -> list[dict]:
 
 def points_by_attempt(profile: Profile) -> list[Point]:
     entries = _timed(profile)[-MAX_ATTEMPT_POINTS:]
-    return [Point(_short_date(_when(h)), h["wpm"], h["accuracy"], step_title(h["step"]))
-            for h in entries]
+    return [
+        Point(_short_date(_when(h)), h["wpm"], h["accuracy"], step_title(h["step"]))
+        for h in entries
+    ]
 
 
 def points_by_day(profile: Profile) -> list[Point]:
