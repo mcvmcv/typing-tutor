@@ -4,15 +4,11 @@ name: Build apps
 # Pushing a version tag (e.g. `git tag v0.2.0 && git push --tags`) also
 # publishes a GitHub Release with the apps attached.
 
+# It runs only for version tags, or by hand from the Actions tab (a manual
+# run builds and smoke-tests the apps but doesn't publish a release).
 on:
   push:
     tags: ["v*"]
-  pull_request:
-    paths:
-      - "packaging/**"
-      - ".github/workflows/build.yml"
-      - "pyproject.toml"
-      - "typing_tutor/smoke.py"
   workflow_dispatch:
 
 jobs:

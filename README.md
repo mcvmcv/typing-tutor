@@ -174,7 +174,8 @@ make icon       # redraw the app icon (PNG, Windows .ico, macOS .icns, favicon)
   locally before pushing.
 - **Standalone apps:** `packaging/learn-typing.spec` builds them with
   PyInstaller. `.github/workflows/build.yml` builds and smoke-tests them on
-  Windows, macOS (Apple and Intel) and Linux. `--smoke-test` starts the built
+  Windows, macOS (Apple and Intel) and Linux, when a version tag is pushed or
+  by hand from the Actions tab (**Build apps → Run workflow**). `--smoke-test` starts the built
   app with throwaway data, types a key, checks the sounds load and play, and
   exits.
 - **Releasing:** bump `version` in `pyproject.toml`, commit, then
