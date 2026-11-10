@@ -17,7 +17,7 @@ from PySide6.QtMultimedia import QSoundEffect
 
 RATE = 44100
 CLICK_VOICES = 4          # overlapping copies so fast typing never cuts clicks off
-SOUND_VERSION = 2         # bump to regenerate cached files after changing a sound
+SOUND_VERSION = 3         # bump to regenerate cached files after changing a sound
 
 # Note frequencies (Hz).
 C5, E5, G5, C6, E6, G6, C7 = 523.25, 659.25, 783.99, 1046.5, 1318.5, 1568.0, 2093.0
@@ -95,7 +95,44 @@ def _fanfare(stars: int) -> list[float]:
     return [0.7 * v for v in _mix(*parts)]   # celebratory, not startling
 
 
+def _pop() -> list[float]:
+    """A balloon pop: a quick bright burst with a little pitch drop."""
+    rng = random.Random(7)
+    n = int(RATE * 0.12)
+    out = []
+    phase = 0.0
+    for i in range(n):
+        t = i / RATE
+        phase += 2 * math.pi * (900 - 4000 * t) / RATE
+        noise = rng.uniform(-1, 1) * math.exp(-60 * t)
+        tone = math.sin(phase) * math.exp(-35 * t)
+        out.append(0.5 * (0.6 * noise + 0.4 * tone))
+    return out
+
+
+def _whoosh() -> list[float]:
+    """A balloon floating away: a soft falling whistle."""
+    n = int(RATE * 0.5)
+    out = []
+    phase = 0.0
+    for i in range(n):
+        t = i / RATE
+        phase += 2 * math.pi * (900 - 900 * t) / RATE
+        env = min(1.0, t / 0.05) * math.exp(-5 * t)
+        out.append(0.3 * env * math.sin(phase))
+    return out
+
+
+def _game_over() -> list[float]:
+    notes = [G5, E5, C5]
+    parts = [(i * 0.2, _bell(f, 0.6, volume=0.4, decay=4)) for i, f in enumerate(notes)]
+    return [0.7 * v for v in _mix(*parts)]
+
+
 SOUNDS = {
+    "pop": _pop,
+    "whoosh": _whoosh,
+    "gameover": _game_over,
     "click": _click,
     "oops": _oops,
     "line": _line_done,
@@ -146,7 +183,7 @@ class SoundPlayer(QObject):
         except OSError:
             return   # can't write the cache: run silently
         for name, path in paths.items():
-            voices = CLICK_VOICES if name in ("click", "oops") else 1
+            voices = CLICK_VOICES if name in ("click", "oops", "pop") else 1
             effects = []
             for _ in range(voices):
                 fx = QSoundEffect(self)

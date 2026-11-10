@@ -8,7 +8,8 @@ from PySide6.QtWidgets import (QFrame, QGridLayout, QHBoxLayout, QLabel, QPushBu
 
 from ..lessons import ALL_STEPS, LESSONS, Lesson, first_unfinished, is_unlocked
 from ..keyboard import fingers_for_char
-from ..plays import key_scores, weak_keys
+from ..game import MIN_WORDS, game_words
+from ..plays import key_scores, known_keys, weak_keys
 from ..storage import Profile
 from ..theme import INK, finger_color
 
@@ -31,6 +32,7 @@ class LessonMenuScreen(QWidget):
     review_requested = Signal()
     settings_requested = Signal()
     progress_requested = Signal()
+    game_requested = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -63,6 +65,17 @@ class LessonMenuScreen(QWidget):
         self.continue_btn.setMinimumHeight(64)
         self.continue_btn.setStyleSheet("font-size: 24px;")
         self.continue_btn.clicked.connect(self._continue)
+        self.game_btn = QPushButton()
+        self.game_btn.setMinimumHeight(64)
+        self.game_btn.setStyleSheet(
+            "QPushButton { background: #8fd3ff; font-size: 20px; }"
+            "QPushButton:hover { background: #6cc4fb; }"
+            "QPushButton:disabled { background: #ebe4d6; color: #aaa294; font-size: 15px; }")
+        self.game_btn.clicked.connect(self.game_requested)
+        actions = QHBoxLayout()
+        actions.setSpacing(14)
+        actions.addWidget(self.continue_btn, 3)
+        actions.addWidget(self.game_btn, 1)
 
         # Tricky keys panel.
         self.tricky_panel = QFrame(objectName="Panel")
@@ -96,7 +109,7 @@ class LessonMenuScreen(QWidget):
         layout.setContentsMargins(40, 30, 40, 30)
         layout.addLayout(header)
         layout.addSpacing(18)
-        layout.addWidget(self.continue_btn)
+        layout.addLayout(actions)
         layout.addSpacing(12)
         layout.addWidget(self.tricky_panel)
         layout.addSpacing(12)
@@ -126,6 +139,10 @@ class LessonMenuScreen(QWidget):
         else:
             self.continue_btn.setText("▶  Keep going!")
         self._refresh_tricky()
+        unlocked = len(game_words(known_keys(self._profile))) >= MIN_WORDS
+        self.game_btn.setEnabled(unlocked)
+        self.game_btn.setText("Balloon Pop" if unlocked
+                              else "Balloon Pop\nunlocks after step 5")
         # Wait for the layout to settle, then bring the current step into view.
         QTimer.singleShot(0, self._scroll_to_next)
 

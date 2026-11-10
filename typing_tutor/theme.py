@@ -78,6 +78,7 @@ QComboBox {{
 }}
 QCheckBox {{ font-size: 17px; spacing: 10px; }}
 QCheckBox::indicator {{ width: 22px; height: 22px; }}
+QFrame#GamePanel {{ background: white; border: 3px solid #e8dcc2; border-radius: 22px; }}
 QFrame#Panel {{ background: #fff1cc; border-radius: 16px; }}
 QFrame#Tile {{ background: white; border: 2px solid #e8dcc2; border-radius: 16px; }}
 QLabel#TileValue {{ font-size: 26px; font-weight: bold; }}

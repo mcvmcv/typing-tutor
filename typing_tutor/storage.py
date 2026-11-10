@@ -31,6 +31,8 @@ class Profile:
     # Words per minute needed for full stars; 0 means accuracy only.
     speed_goal: int = 0
     sound: bool = True
+    # Balloon Pop best score per difficulty.
+    game_best: dict[str, int] = field(default_factory=dict)
     key_clicks: bool = True
 
     def stars(self, step_id: str) -> int:
@@ -104,17 +106,34 @@ class ProfileStore:
                 profile.key_clicks = key_clicks
             self.save()
 
+    def record_game(self, profile_id: str, difficulty: str, score: int,
+                    key_stats: dict) -> bool:
+        """Save a finished game. Returns True if it's a new best score."""
+        profile = self.get(profile_id)
+        if profile is None:
+            return False
+        self._merge_key_stats(profile, key_stats)
+        best = score > profile.game_best.get(difficulty, 0)
+        if best:
+            profile.game_best[difficulty] = score
+        self.save()
+        return best
+
+    def _merge_key_stats(self, profile: Profile, key_stats: dict | None) -> None:
+        if not key_stats:
+            return
+        merge_key_stats(profile.key_stats, key_stats)
+        for s in profile.key_stats.values():
+            if s["h"] + s["m"] > KEY_STATS_WINDOW:
+                for f in ("h", "m", "t", "n"):
+                    s[f] /= 2
+
     def record_result(self, profile_id: str, step_id: str, wpm: float,
                       accuracy: float, stars: int, key_stats: dict | None = None) -> None:
         profile = self.get(profile_id)
         if profile is None:
             return
-        if key_stats:
-            merge_key_stats(profile.key_stats, key_stats)
-            for s in profile.key_stats.values():
-                if s["h"] + s["m"] > KEY_STATS_WINDOW:
-                    for f in ("h", "m", "t", "n"):
-                        s[f] /= 2
+        self._merge_key_stats(profile, key_stats)
         wpm, accuracy = round(wpm, 1), round(accuracy, 1)
         profile.history.append({
             "step": step_id, "wpm": wpm, "accuracy": accuracy, "stars": stars,

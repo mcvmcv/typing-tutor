@@ -29,6 +29,15 @@ Each player can have a speed goal (set when created, or via Settings). With a
 goal, 3 stars needs both 95%+ accuracy and the target speed (75% of it on
 key-drill steps). It's off by default, which suits young beginners.
 
+## Balloon Pop
+
+A typing game on the lesson menu, unlocked after the home row's "All
+together" step. Words on balloons float up; type a word to pop its balloon,
+and don't let 3 float away. It speeds up every 8 pops. Words only use keys the
+player has learned. Easy/Medium/Hard set the starting speed and word length,
+best scores are kept per difficulty, and game keystrokes feed the tricky-keys
+stats. Esc pauses.
+
 ## Sounds
 
 Soft synthesised sound effects (key tick, gentle "oops", line chime, star
@@ -55,6 +64,7 @@ overwritten.
 - `typing_tutor/generator.py` — builds fresh practice lines from known keys
 - `typing_tutor/wordlist.py` — words, names, sentences and stories
 - `typing_tutor/session.py` — typing logic: accuracy, WPM, stars, per-key stats
+- `typing_tutor/game.py` — Balloon Pop rules (drawing is in `screens/game_screen.py`)
 - `typing_tutor/progress.py` — chart points and summary numbers from history
 - `typing_tutor/plays.py` — what gets played: course steps, tricky-key reviews, speed goals
 - `typing_tutor/keyboard.py` — US QWERTY layout and finger assignments

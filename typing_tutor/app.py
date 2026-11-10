@@ -5,10 +5,12 @@ import sys
 
 from PySide6.QtWidgets import QApplication, QDialog, QMainWindow, QStackedWidget
 
-from .plays import lesson_play, review_play
+from .game import game_words
+from .plays import known_keys, lesson_play, review_play
 from .screens.menu import LessonMenuScreen
 from .screens.practice import PracticeScreen, StepResult
 from .screens.profiles import ProfileScreen, SettingsDialog
+from .screens.game_screen import GameScreen
 from .screens.progress_screen import ProgressScreen
 from .sounds import SoundPlayer
 from .storage import ProfileStore
@@ -29,8 +31,10 @@ class MainWindow(QMainWindow):
         self.sounds = SoundPlayer(parent=self)
         self.practice = PracticeScreen(self.sounds)
         self.progress = ProgressScreen()
+        self.game = GameScreen(self.sounds)
+        self.game.record_game = self._record_game
         self.stack = QStackedWidget()
-        for screen in (self.profiles, self.menu, self.practice, self.progress):
+        for screen in (self.profiles, self.menu, self.practice, self.progress, self.game):
             self.stack.addWidget(screen)
         self.setCentralWidget(self.stack)
 
@@ -41,6 +45,8 @@ class MainWindow(QMainWindow):
         self.menu.settings_requested.connect(self.open_settings)
         self.menu.progress_requested.connect(self.show_progress)
         self.progress.back_requested.connect(self.show_menu)
+        self.menu.game_requested.connect(self.show_game)
+        self.game.menu_requested.connect(self.show_menu)
         self.practice.menu_requested.connect(self.show_menu)
         self.practice.step_completed.connect(self._record)
         self.practice.sound_toggled.connect(
@@ -77,6 +83,15 @@ class MainWindow(QMainWindow):
     def show_progress(self) -> None:
         self.progress.set_profile(self.store.get(self.profile_id))
         self.stack.setCurrentWidget(self.progress)
+
+    def show_game(self) -> None:
+        profile = self.store.get(self.profile_id)
+        self.stack.setCurrentWidget(self.game)
+        self.game.open(game_words(known_keys(profile)), profile.game_best)
+
+    def _record_game(self, difficulty: str, score: int, key_stats: dict) -> tuple[bool, int]:
+        is_best = self.store.record_game(self.profile_id, difficulty, score, key_stats)
+        return is_best, self.store.get(self.profile_id).game_best.get(difficulty, 0)
 
     def start_review(self) -> None:
         play = review_play(self.store.get(self.profile_id))
