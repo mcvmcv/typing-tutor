@@ -6,6 +6,8 @@
 <title>Learn Typing: a friendly touch-typing tutor for kids</title>
 <meta name="description" content="Free touch-typing lessons for kids, with finger-by-finger guidance, a balloon-popping game and progress charts. Works offline on Windows, Mac and Linux.">
 <meta name="color-scheme" content="light">
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
 <style>
   :root {
     --bg: #fff8e7;
@@ -37,7 +39,6 @@
 
   header.top { display: flex; align-items: center; justify-content: space-between; padding: 18px 0; }
   .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; text-decoration: none; }
-  .brand .dot { width: 28px; height: 28px; border-radius: 9px; background: var(--button); display: grid; place-items: center; font-size: 15px; }
   .top nav a { margin-left: 18px; color: var(--muted); text-decoration: none; font-size: 16px; }
   .top nav a:hover { color: var(--ink); }
 
@@ -160,7 +161,7 @@
 <body>
 <div class="wrap">
   <header class="top">
-    <a class="brand" href="#"><span class="dot" aria-hidden="true">⌨</span> Learn Typing</a>
+    <a class="brand" href="#"><img src="icon.png" width="36" height="36" alt=""> Learn Typing</a>
     <nav>
       <a href="#features">What's inside</a>
       <a href="#screenshots">Screenshots</a>

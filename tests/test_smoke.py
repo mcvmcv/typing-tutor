@@ -92,3 +92,11 @@ def test_playback_check_is_silent_and_stops_the_sound(qapp):
 
 def test_playback_check_gives_up_if_nothing_plays(qapp):
     assert not smoke._plays(qapp, FakeEffect(starts=False), timeout=0.05)
+
+
+def test_fails_when_the_icon_is_missing(themed_app, no_sound_card, monkeypatch, capsys):
+    from PySide6.QtGui import QIcon
+
+    monkeypatch.setattr("typing_tutor.app.app_icon", lambda: QIcon())
+    assert smoke.run(themed_app) == 1
+    assert "icon:     FAILED" in capsys.readouterr().out

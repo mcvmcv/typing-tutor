@@ -1,6 +1,6 @@
 PY := .venv/bin
 
-.PHONY: help install run test coverage lint format typecheck check app screenshots
+.PHONY: help install run test coverage lint format typecheck check app screenshots icon
 
 help:
 	@echo "make install    set up the virtualenv with the app and dev tools"
@@ -13,6 +13,7 @@ help:
 	@echo "make check      everything CI runs: lint, format check, types, tests"
 	@echo "make app        build a standalone app in dist/ (no Python needed to run it)"
 	@echo "make screenshots  regenerate docs/screenshots/ from demo players"
+	@echo "make icon       redraw the app icon in every format"
 
 install:
 	python3 -m venv .venv
@@ -48,3 +49,6 @@ app:
 
 screenshots:
 	$(PY)/python scripts/screenshots.py
+
+icon:
+	$(PY)/python scripts/make_icon.py

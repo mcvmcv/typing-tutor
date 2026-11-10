@@ -151,6 +151,7 @@ overwritten.
 - `packaging/` — PyInstaller spec and release notes for the standalone apps
 - `docs/` — the website (GitHub Pages serves it from `main`) and screenshots
 - `scripts/screenshots.py` — makes the screenshots from demo players, offscreen
+- `scripts/make_icon.py` — draws the app icon with Qt and writes every format
 
 ## Development
 
@@ -160,6 +161,7 @@ make test       # just the tests
 make format     # auto-format with ruff
 make app        # build a standalone app into dist/ and smoke-test it
 make screenshots  # regenerate docs/screenshots/ from made-up demo players
+make icon       # redraw the app icon (PNG, Windows .ico, macOS .icns, favicon)
 ```
 
 - **Tests** live in `tests/` (pytest + pytest-qt). The GUI tests drive the real
