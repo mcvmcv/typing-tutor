@@ -64,25 +64,31 @@ def run(app: QApplication, timeout: float = 10.0) -> int:
         app.processEvents()
 
         effects = window.sounds.effects()
-        _wait_for_sounds(app, effects, timeout)
-        statuses = Counter(fx.status().name for fx in effects)
-        sounds_ok = bool(effects) and statuses.get("Ready", 0) == len(effects)
-        # CI machines usually have no sound card; then playback can't be checked.
+        created = len(effects) > 0
+        # Without a sound card (most CI machines) every effect ends in Error,
+        # so loading and playback can only be checked when there is one.
         has_output = bool(QMediaDevices.audioOutputs())
-        played = sounds_ok and has_output and _plays(app, effects[0])
+        if has_output:
+            _wait_for_sounds(app, effects, timeout)
+        statuses = Counter(fx.status().name for fx in effects)
+        loaded = created and statuses.get("Ready", 0) == len(effects)
+        played = has_output and loaded and _plays(app, effects[0])
         typed = line.pos
         window.close()
 
-    playback_ok = played or not has_output
-    playback = "skipped (no audio output)" if not has_output else "ok" if played else "FAILED"
+    def verdict(ok: bool) -> str:
+        return "skipped (no audio output)" if not has_output else "ok" if ok else "FAILED"
+
     report = [
         f"window:   ok (Qt platform: {app.platformName()})",
         f"typing:   {'ok' if typed == 1 else 'FAILED'} (typed {typed} of 1 key)",
-        f"sounds:   {'ok' if sounds_ok else 'FAILED'} ({dict(statuses)})",
-        f"playback: {playback}",
+        f"sounds:   {'ok' if created else 'FAILED'} ({len(effects)} effects created)",
+        f"loading:  {verdict(loaded)} ({dict(statuses)})",
+        f"playback: {verdict(played)}",
     ]
     _show("\n".join(report))
-    return 0 if typed == 1 and sounds_ok and playback_ok else 1
+    sound_ok = created and (played or not has_output)
+    return 0 if typed == 1 and sound_ok else 1
 
 
 def _show(text: str) -> None:
