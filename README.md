@@ -29,12 +29,26 @@ Each player can have a speed goal (set when created, or via Settings). With a
 goal, 3 stars needs both 95%+ accuracy and the target speed (75% of it on
 key-drill steps). It's off by default, which suits young beginners.
 
+## Progress screen
+
+"My progress" on the lesson menu shows best speed, recent accuracy, stars,
+steps finished and practice days, a speed chart (by day or every step, with the
+speed goal as a dashed line; hover a point for details), and a table of recent
+practice.
+
+## Data
+
+Everything is stored in one JSON file (path above), saved atomically. If it
+ever can't be read, it's renamed to `profiles.broken-<time>.json` rather than
+overwritten.
+
 ## Layout
 
 - `typing_tutor/lessons.py` — the course (add new lessons to `LESSONS`)
 - `typing_tutor/generator.py` — builds fresh practice lines from known keys
 - `typing_tutor/wordlist.py` — words, names, sentences and stories
 - `typing_tutor/session.py` — typing logic: accuracy, WPM, stars, per-key stats
+- `typing_tutor/progress.py` — chart points and summary numbers from history
 - `typing_tutor/plays.py` — what gets played: course steps, tricky-key reviews, speed goals
 - `typing_tutor/keyboard.py` — US QWERTY layout and finger assignments
 - `typing_tutor/storage.py` — player profiles and progress

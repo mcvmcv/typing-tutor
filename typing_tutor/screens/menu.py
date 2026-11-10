@@ -30,6 +30,7 @@ class LessonMenuScreen(QWidget):
     switch_player = Signal()
     review_requested = Signal()
     settings_requested = Signal()
+    progress_requested = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -48,6 +49,10 @@ class LessonMenuScreen(QWidget):
         header.addSpacing(12)
         header.addWidget(self.greeting)
         header.addStretch()
+        progress = QPushButton("My progress")
+        progress.setProperty("role", "secondary")
+        progress.clicked.connect(self.progress_requested)
+        header.addWidget(progress)
         settings = QPushButton("Settings")
         settings.setProperty("role", "secondary")
         settings.clicked.connect(self.settings_requested)

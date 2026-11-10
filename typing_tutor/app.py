@@ -9,6 +9,7 @@ from .plays import lesson_play, review_play
 from .screens.menu import LessonMenuScreen
 from .screens.practice import PracticeScreen, StepResult
 from .screens.profiles import ProfileScreen, SettingsDialog
+from .screens.progress_screen import ProgressScreen
 from .storage import ProfileStore
 from .theme import apply_theme
 
@@ -25,8 +26,9 @@ class MainWindow(QMainWindow):
         self.profiles = ProfileScreen(store)
         self.menu = LessonMenuScreen()
         self.practice = PracticeScreen()
+        self.progress = ProgressScreen()
         self.stack = QStackedWidget()
-        for screen in (self.profiles, self.menu, self.practice):
+        for screen in (self.profiles, self.menu, self.practice, self.progress):
             self.stack.addWidget(screen)
         self.setCentralWidget(self.stack)
 
@@ -35,6 +37,8 @@ class MainWindow(QMainWindow):
         self.menu.step_chosen.connect(self.start_step)
         self.menu.review_requested.connect(self.start_review)
         self.menu.settings_requested.connect(self.open_settings)
+        self.menu.progress_requested.connect(self.show_progress)
+        self.progress.back_requested.connect(self.show_menu)
         self.practice.menu_requested.connect(self.show_menu)
         self.practice.step_completed.connect(self._record)
 
@@ -58,6 +62,10 @@ class MainWindow(QMainWindow):
         profile = self.store.get(self.profile_id)
         self.stack.setCurrentWidget(self.practice)
         self.practice.start(lesson_play(lesson, index, profile))
+
+    def show_progress(self) -> None:
+        self.progress.set_profile(self.store.get(self.profile_id))
+        self.stack.setCurrentWidget(self.progress)
 
     def start_review(self) -> None:
         play = review_play(self.store.get(self.profile_id))
