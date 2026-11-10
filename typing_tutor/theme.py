@@ -72,6 +72,15 @@ QLineEdit {{
 }}
 QLineEdit:focus {{ border-color: #64b5f6; }}
 QScrollArea {{ border: none; background: transparent; }}
+QComboBox {{
+    font-size: 17px; padding: 8px 12px; border: 2px solid #e0d5bd;
+    border-radius: 10px; background: white;
+}}
+QFrame#Panel {{ background: #fff1cc; border-radius: 16px; }}
+QLabel#Chip {{
+    font-size: 20px; font-weight: bold; border-radius: 10px; padding: 4px 12px;
+    border: 2px solid {INK};
+}}
 """
 
 

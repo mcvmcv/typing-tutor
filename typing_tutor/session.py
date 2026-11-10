@@ -5,6 +5,9 @@ import time
 from enum import Enum
 
 
+MAX_KEY_GAP = 3.0   # seconds; slower keystrokes aren't counted toward key speed
+
+
 class CharState(Enum):
     PENDING = 0
     CORRECT = 1     # typed right on the first try
@@ -28,6 +31,9 @@ class TypingSession:
         self._missed: set[int] = set()
         self.started_at: float | None = None
         self.finished_at: float | None = None
+        # Per expected character: h=hits, m=misses, t=seconds over n timed hits.
+        self.key_stats: dict[str, dict[str, float]] = {}
+        self._last_ok_at: float | None = None
 
     @property
     def finished(self) -> bool:
@@ -44,7 +50,17 @@ class TypingSession:
         now = self._clock()
         if self.started_at is None:
             self.started_at = now
-        if ch == self.text[self.pos]:
+        expected = self.text[self.pos]
+        stats = self.key_stats.setdefault(expected, {"h": 0, "m": 0, "t": 0.0, "n": 0})
+        if ch == expected:
+            stats["h"] += 1
+            if self._last_ok_at is not None:
+                # Long pauses (looking away, chatting) would skew the timing.
+                gap = now - self._last_ok_at
+                if gap <= MAX_KEY_GAP:
+                    stats["t"] += gap
+                    stats["n"] += 1
+            self._last_ok_at = now
             missed = self.pos in self._missed
             self.states[self.pos] = CharState.CORRECTED if missed else CharState.CORRECT
             self.pos += 1
@@ -52,6 +68,7 @@ class TypingSession:
             if self.finished:
                 self.finished_at = now
             return True
+        stats["m"] += 1
         self._missed.add(self.pos)
         self.mistakes += 1
         self.error_at_cursor = True
@@ -73,12 +90,31 @@ class TypingSession:
         return (self.pos / 5) / minutes
 
 
-def stars_for(accuracy: float) -> int:
+def stars_for(accuracy: float, wpm: float = 0.0, speed_goal: float = 0.0) -> int:
+    """Stars from accuracy, capped by speed when a speed goal is set."""
     if accuracy >= 95:
-        return 3
-    if accuracy >= 85:
-        return 2
-    return 1
+        stars = 3
+    elif accuracy >= 85:
+        stars = 2
+    else:
+        stars = 1
+    if speed_goal > 0:
+        if wpm >= speed_goal:
+            speed_stars = 3
+        elif wpm >= speed_goal * 0.7:
+            speed_stars = 2
+        else:
+            speed_stars = 1
+        stars = min(stars, speed_stars)
+    return stars
+
+
+def merge_key_stats(into: dict, new: dict) -> dict:
+    for ch, s in new.items():
+        dest = into.setdefault(ch, {"h": 0, "m": 0, "t": 0.0, "n": 0})
+        for field in ("h", "m", "t", "n"):
+            dest[field] += s[field]
+    return into
 
 
 class StepRun:
@@ -134,3 +170,9 @@ class StepRun:
         if seconds < 1:
             return 0.0
         return (self.typed_chars / 5) / (seconds / 60)
+
+    def key_stats(self) -> dict[str, dict[str, float]]:
+        merged: dict = {}
+        for s in self.sessions:
+            merge_key_stats(merged, s.key_stats)
+        return merged

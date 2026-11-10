@@ -1,13 +1,14 @@
 """The practice screen: text, keyboard, hands, and the end-of-step result."""
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtWidgets import (QDialog, QHBoxLayout, QLabel, QProgressBar,
                                QPushButton, QVBoxLayout, QWidget)
 
 from ..keyboard import char_name, finger_hint, fingers_for_char
-from ..generator import build_lines
-from ..lessons import Lesson, next_step
+from ..plays import Play
 from ..session import StepRun, stars_for
 from ..theme import repolish
 from ..widgets.hands_view import HandsView
@@ -15,15 +16,23 @@ from ..widgets.keyboard_view import KeyboardView
 from ..widgets.typing_view import TypingView
 
 
+@dataclass
+class StepResult:
+    step_id: str
+    wpm: float
+    accuracy: float
+    stars: int
+    key_stats: dict
+
+
 class PracticeScreen(QWidget):
     menu_requested = Signal()
-    step_completed = Signal(str, float, float, int)  # step_id, wpm, accuracy, stars
+    step_completed = Signal(object)  # StepResult
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        self._lesson: Lesson | None = None
-        self._index = 0
+        self._play: Play | None = None
         self._run: StepRun | None = None
         self._finishing = False
 
@@ -74,13 +83,12 @@ class PracticeScreen(QWidget):
 
         self._stats_timer = QTimer(self, interval=500, timeout=self._update_stats)
 
-    def start(self, lesson: Lesson, index: int) -> None:
-        self._lesson, self._index = lesson, index
-        step = lesson.steps[index]
-        self._run = StepRun(build_lines(lesson, index))
+    def start(self, play: Play) -> None:
+        self._play = play
+        self._run = StepRun(play.make_lines())
         self._finishing = False
-        self.title.setText(step.title)
-        self.instruction.setText(step.instruction)
+        self.title.setText(play.title)
+        self.instruction.setText(play.instruction)
         self.typing.set_session(self._run.current)
         self.progress.setRange(0, self._run.total_chars)
         self._set_hint(None)
@@ -135,10 +143,8 @@ class PracticeScreen(QWidget):
         self.hands.set_active_fingers(fingers_for_char(expected) if expected else ())
         self.typing.update()
         self.progress.setValue(run.typed_chars)
-        lesson = self._lesson
         self.step_count.setText(
-            f"{lesson.title} · step {self._index + 1} of {len(lesson.steps)}"
-            f" · line {run.index + 1} of {len(run.lines)}")
+            f"{self._play.header} · line {run.index + 1} of {len(run.lines)}")
         self.next_line.setText("" if run.on_last_line
                                else f"Next:  {run.lines[run.index + 1]}")
         if self._hint_error:
@@ -154,22 +160,27 @@ class PracticeScreen(QWidget):
         if s is None:
             return
         self.accuracy_label.setText(f"Accuracy: {s.accuracy():.0f}%")
-        self.speed_label.setText(f"Speed: {s.wpm():.0f} WPM")
+        goal = self._play.speed_goal
+        if goal:
+            self.speed_label.setText(f"Speed: {s.wpm():.0f} / {goal:.0f} WPM")
+        else:
+            self.speed_label.setText(f"Speed: {s.wpm():.0f} WPM")
 
     def _show_result(self) -> None:
-        s, lesson, index = self._run, self._lesson, self._index
-        accuracy, wpm = s.accuracy(), s.wpm()
-        stars = stars_for(accuracy)
-        self.step_completed.emit(lesson.step_id(index), wpm, accuracy, stars)
+        run, play = self._run, self._play
+        accuracy, wpm = run.accuracy(), run.wpm()
+        stars = stars_for(accuracy, wpm, play.speed_goal)
+        self.step_completed.emit(
+            StepResult(play.step_id, wpm, accuracy, stars, run.key_stats()))
 
-        upcoming = next_step(lesson, index)
-        dlg = ResultDialog(stars, accuracy, wpm, s.mistakes, has_next=upcoming is not None,
-                           parent=self)
+        upcoming = play.next_play() if play.next_play else None
+        dlg = ResultDialog(stars, accuracy, wpm, run.mistakes, play.speed_goal,
+                           has_next=upcoming is not None, parent=self)
         dlg.exec()
         if dlg.choice == "retry":
-            self.start(lesson, index)
+            self.start(play)
         elif dlg.choice == "next" and upcoming:
-            self.start(*upcoming)
+            self.start(upcoming)
         else:
             self.menu_requested.emit()
 
@@ -183,7 +194,7 @@ class ResultDialog(QDialog):
     }
 
     def __init__(self, stars: int, accuracy: float, wpm: float, mistakes: int,
-                 has_next: bool, parent=None):
+                 speed_goal: float, has_next: bool, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Step complete")
         self.setMinimumWidth(480)
@@ -198,10 +209,21 @@ class ResultDialog(QDialog):
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         sub = QLabel(self.SUBTEXT[stars], objectName="Subtitle", wordWrap=True)
         sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        oops = "1 oops" if mistakes == 1 else f"{mistakes} oopses"
+        oops = {0: "no oopses", 1: "1 oops"}.get(mistakes, f"{mistakes} oopses")
         stats = QLabel(f"Accuracy {accuracy:.0f}%   ·   Speed {wpm:.0f} WPM   ·   {oops}",
                        objectName="Stat")
         stats.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        goal_label = QLabel(objectName="Stat")
+        goal_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        if speed_goal:
+            if wpm >= speed_goal:
+                goal_label.setText(f"Speed goal {speed_goal:.0f} WPM: reached!")
+            else:
+                goal_label.setText(f"Speed goal {speed_goal:.0f} WPM: "
+                                   f"{speed_goal - wpm:.0f} to go")
+            if stars < 3 and accuracy >= 95:
+                sub.setText("Super careful! Now try going a little faster for 3 stars.")
+        goal_label.setVisible(bool(speed_goal))
 
         buttons = QHBoxLayout()
         menu = self._button("Lessons", "menu", secondary=True)
@@ -223,6 +245,7 @@ class ResultDialog(QDialog):
         layout.addWidget(sub)
         layout.addSpacing(8)
         layout.addWidget(stats)
+        layout.addWidget(goal_label)
         layout.addSpacing(20)
         layout.addLayout(buttons)
 

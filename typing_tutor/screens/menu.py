@@ -2,14 +2,23 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, QTimer, Signal
-from PySide6.QtWidgets import (QGridLayout, QHBoxLayout, QLabel, QPushButton,
+from PySide6.QtGui import QColor
+from PySide6.QtWidgets import (QFrame, QGridLayout, QHBoxLayout, QLabel, QPushButton,
                                QScrollArea, QVBoxLayout, QWidget)
 
 from ..lessons import ALL_STEPS, LESSONS, Lesson, first_unfinished, is_unlocked
+from ..keyboard import fingers_for_char
+from ..plays import key_scores, weak_keys
 from ..storage import Profile
-from ..theme import INK
+from ..theme import INK, finger_color
 
 COLUMNS = 3
+
+
+def chip_text(key: str) -> str:
+    if key.isupper():
+        return f"Shift+{key}"
+    return key.upper() if key.isalpha() else key
 
 
 def star_text(stars: int) -> str:
@@ -19,6 +28,8 @@ def star_text(stars: int) -> str:
 class LessonMenuScreen(QWidget):
     step_chosen = Signal(object, int)   # Lesson, step index
     switch_player = Signal()
+    review_requested = Signal()
+    settings_requested = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -37,12 +48,31 @@ class LessonMenuScreen(QWidget):
         header.addSpacing(12)
         header.addWidget(self.greeting)
         header.addStretch()
+        settings = QPushButton("Settings")
+        settings.setProperty("role", "secondary")
+        settings.clicked.connect(self.settings_requested)
+        header.addWidget(settings)
         header.addWidget(switch)
 
         self.continue_btn = QPushButton()
         self.continue_btn.setMinimumHeight(64)
         self.continue_btn.setStyleSheet("font-size: 24px;")
         self.continue_btn.clicked.connect(self._continue)
+
+        # Tricky keys panel.
+        self.tricky_panel = QFrame(objectName="Panel")
+        tricky = QHBoxLayout(self.tricky_panel)
+        tricky.setContentsMargins(18, 12, 18, 12)
+        self.tricky_label = QLabel(objectName="Instruction")
+        self.chips = QHBoxLayout()
+        self.chips.setSpacing(8)
+        self.review_btn = QPushButton("Practise them")
+        self.review_btn.clicked.connect(self.review_requested)
+        tricky.addWidget(self.tricky_label)
+        tricky.addSpacing(8)
+        tricky.addLayout(self.chips)
+        tricky.addStretch()
+        tricky.addWidget(self.review_btn)
 
         self.lessons_box = QVBoxLayout()
         self.lessons_box.setSpacing(24)
@@ -62,7 +92,9 @@ class LessonMenuScreen(QWidget):
         layout.addLayout(header)
         layout.addSpacing(18)
         layout.addWidget(self.continue_btn)
-        layout.addSpacing(18)
+        layout.addSpacing(12)
+        layout.addWidget(self.tricky_panel)
+        layout.addSpacing(12)
         layout.addWidget(scroll, 1)
 
     def set_profile(self, profile: Profile) -> None:
@@ -88,8 +120,32 @@ class LessonMenuScreen(QWidget):
             self.continue_btn.setText("▶  Start your first lesson!")
         else:
             self.continue_btn.setText("▶  Keep going!")
+        self._refresh_tricky()
         # Wait for the layout to settle, then bring the current step into view.
         QTimer.singleShot(0, self._scroll_to_next)
+
+    def _refresh_tricky(self) -> None:
+        while self.chips.count():
+            self.chips.takeAt(0).widget().deleteLater()
+        profile = self._profile
+        if not key_scores(profile):
+            # Not enough typing yet to tell which keys are tricky.
+            self.tricky_panel.setVisible(False)
+            return
+        self.tricky_panel.setVisible(True)
+        weak = weak_keys(profile)
+        if not weak:
+            self.tricky_label.setText("No tricky keys right now. Great typing!")
+            self.review_btn.setVisible(False)
+            return
+        self.tricky_label.setText("Your tricky keys:")
+        self.review_btn.setVisible(True)
+        for key in weak:
+            chip = QLabel(chip_text(key), objectName="Chip")
+            fingers = fingers_for_char(key)
+            color = finger_color(fingers[0]) if fingers else QColor("#ddd5c6")
+            chip.setStyleSheet(f"background: {color.name()};")
+            self.chips.addWidget(chip)
 
     def _scroll_to_next(self) -> None:
         if self._next_button is not None:

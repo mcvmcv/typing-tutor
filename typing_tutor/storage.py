@@ -10,6 +10,12 @@ from pathlib import Path
 
 from PySide6.QtCore import QStandardPaths
 
+from .session import merge_key_stats
+
+# Once a key has this many samples, its stats are halved so recent typing
+# counts most and improvement shows up.
+KEY_STATS_WINDOW = 150
+
 
 @dataclass
 class Profile:
@@ -20,6 +26,10 @@ class Profile:
     best: dict[str, dict] = field(default_factory=dict)
     # Every finished attempt, kept for future stats screens.
     history: list[dict] = field(default_factory=list)
+    # char -> {"h": hits, "m": misses, "t": seconds, "n": timed hits}
+    key_stats: dict[str, dict] = field(default_factory=dict)
+    # Words per minute needed for full stars; 0 means accuracy only.
+    speed_goal: int = 0
 
     def stars(self, step_id: str) -> int:
         return self.best.get(step_id, {}).get("stars", 0)
@@ -67,8 +77,9 @@ class ProfileStore:
     def name_taken(self, name: str) -> bool:
         return any(p.name.casefold() == name.strip().casefold() for p in self.profiles)
 
-    def add(self, name: str, color: str) -> Profile:
-        profile = Profile(id=uuid.uuid4().hex, name=name.strip(), color=color)
+    def add(self, name: str, color: str, speed_goal: int = 0) -> Profile:
+        profile = Profile(id=uuid.uuid4().hex, name=name.strip(), color=color,
+                          speed_goal=speed_goal)
         self.profiles.append(profile)
         self.save()
         return profile
@@ -77,11 +88,23 @@ class ProfileStore:
         self.profiles = [p for p in self.profiles if p.id != profile_id]
         self.save()
 
-    def record_result(self, profile_id: str, step_id: str,
-                      wpm: float, accuracy: float, stars: int) -> None:
+    def set_speed_goal(self, profile_id: str, goal: int) -> None:
+        profile = self.get(profile_id)
+        if profile is not None:
+            profile.speed_goal = goal
+            self.save()
+
+    def record_result(self, profile_id: str, step_id: str, wpm: float,
+                      accuracy: float, stars: int, key_stats: dict | None = None) -> None:
         profile = self.get(profile_id)
         if profile is None:
             return
+        if key_stats:
+            merge_key_stats(profile.key_stats, key_stats)
+            for s in profile.key_stats.values():
+                if s["h"] + s["m"] > KEY_STATS_WINDOW:
+                    for f in ("h", "m", "t", "n"):
+                        s[f] /= 2
         wpm, accuracy = round(wpm, 1), round(accuracy, 1)
         profile.history.append({
             "step": step_id, "wpm": wpm, "accuracy": accuracy, "stars": stars,

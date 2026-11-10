@@ -3,11 +3,12 @@ from __future__ import annotations
 
 import sys
 
-from PySide6.QtWidgets import QApplication, QMainWindow, QStackedWidget
+from PySide6.QtWidgets import QApplication, QDialog, QMainWindow, QStackedWidget
 
+from .plays import lesson_play, review_play
 from .screens.menu import LessonMenuScreen
-from .screens.practice import PracticeScreen
-from .screens.profiles import ProfileScreen
+from .screens.practice import PracticeScreen, StepResult
+from .screens.profiles import ProfileScreen, SettingsDialog
 from .storage import ProfileStore
 from .theme import apply_theme
 
@@ -32,6 +33,8 @@ class MainWindow(QMainWindow):
         self.profiles.profile_chosen.connect(self.choose_profile)
         self.menu.switch_player.connect(self.show_profiles)
         self.menu.step_chosen.connect(self.start_step)
+        self.menu.review_requested.connect(self.start_review)
+        self.menu.settings_requested.connect(self.open_settings)
         self.practice.menu_requested.connect(self.show_menu)
         self.practice.step_completed.connect(self._record)
 
@@ -52,11 +55,26 @@ class MainWindow(QMainWindow):
         self.stack.setCurrentWidget(self.menu)
 
     def start_step(self, lesson, index: int) -> None:
+        profile = self.store.get(self.profile_id)
         self.stack.setCurrentWidget(self.practice)
-        self.practice.start(lesson, index)
+        self.practice.start(lesson_play(lesson, index, profile))
 
-    def _record(self, step_id: str, wpm: float, accuracy: float, stars: int) -> None:
-        self.store.record_result(self.profile_id, step_id, wpm, accuracy, stars)
+    def start_review(self) -> None:
+        play = review_play(self.store.get(self.profile_id))
+        if play is not None:
+            self.stack.setCurrentWidget(self.practice)
+            self.practice.start(play)
+
+    def open_settings(self) -> None:
+        profile = self.store.get(self.profile_id)
+        dlg = SettingsDialog(profile, self)
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            self.store.set_speed_goal(profile.id, dlg.speed_goal())
+            self.menu.refresh()
+
+    def _record(self, result: StepResult) -> None:
+        self.store.record_result(self.profile_id, result.step_id, result.wpm,
+                                 result.accuracy, result.stars, result.key_stats)
 
 
 def main() -> int:

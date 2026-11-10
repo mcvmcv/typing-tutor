@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import (QButtonGroup, QDialog, QGridLayout, QHBoxLayout,
+from PySide6.QtWidgets import (QButtonGroup, QComboBox, QDialog, QGridLayout, QHBoxLayout,
                                QLabel, QLineEdit, QMenu, QMessageBox, QPushButton,
                                QVBoxLayout, QWidget)
 
@@ -11,6 +11,32 @@ from ..theme import AVATAR_COLORS, INK
 
 MAX_NAME = 12
 COLUMNS = 4
+
+SPEED_GOALS = (
+    (0, "Off: just be accurate (best for young kids)"),
+    (10, "10 WPM: getting started"),
+    (15, "15 WPM"),
+    (20, "20 WPM: confident"),
+    (25, "25 WPM"),
+    (30, "30 WPM: speedy"),
+    (40, "40 WPM: expert"),
+)
+
+
+class SpeedGoalPicker(QComboBox):
+    def __init__(self, goal: int = 0, parent=None):
+        super().__init__(parent)
+        for value, label in SPEED_GOALS:
+            self.addItem(label, value)
+        values = [v for v, _ in SPEED_GOALS]
+        self.setCurrentIndex(values.index(goal) if goal in values else 0)
+
+    def goal(self) -> int:
+        return self.currentData()
+
+
+SPEED_HELP = ("With a speed goal, 3 stars needs good speed as well as accuracy. "
+              "Leave it off while learning where the keys are.")
 
 
 class ProfileScreen(QWidget):
@@ -92,7 +118,7 @@ class ProfileScreen(QWidget):
     def _new_player(self) -> None:
         dlg = NewPlayerDialog(self.store, self)
         if dlg.exec() == QDialog.DialogCode.Accepted:
-            profile = self.store.add(dlg.name(), dlg.color())
+            profile = self.store.add(dlg.name(), dlg.color(), dlg.speed_goal())
             self.refresh()
             self.profile_chosen.emit(profile.id)
 
@@ -126,6 +152,10 @@ class NewPlayerDialog(QDialog):
         first_free = next((i for i, c in enumerate(AVATAR_COLORS) if c not in used), 0)
         self.colors.button(first_free).setChecked(True)
 
+        speed_heading = QLabel("Speed goal", objectName="Heading")
+        self.speed = SpeedGoalPicker()
+        speed_help = QLabel(SPEED_HELP, objectName="Subtitle", wordWrap=True)
+
         self.ok = QPushButton("Let's go!")
         self.ok.setDefault(True)
         self.ok.clicked.connect(self.accept)
@@ -145,6 +175,10 @@ class NewPlayerDialog(QDialog):
         layout.addSpacing(8)
         layout.addWidget(color_heading)
         layout.addLayout(swatches)
+        layout.addSpacing(8)
+        layout.addWidget(speed_heading)
+        layout.addWidget(self.speed)
+        layout.addWidget(speed_help)
         layout.addSpacing(16)
         layout.addLayout(buttons)
         self._validate()
@@ -160,3 +194,40 @@ class NewPlayerDialog(QDialog):
 
     def color(self) -> str:
         return AVATAR_COLORS[self.colors.checkedId()]
+
+    def speed_goal(self) -> int:
+        return self.speed.goal()
+
+
+class SettingsDialog(QDialog):
+    """Per-player settings, opened from the lesson menu."""
+
+    def __init__(self, profile: Profile, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(f"Settings for {profile.name}")
+        self.setMinimumWidth(460)
+        heading = QLabel("Speed goal", objectName="Heading")
+        self.speed = SpeedGoalPicker(profile.speed_goal)
+        help_text = QLabel(SPEED_HELP, objectName="Subtitle", wordWrap=True)
+
+        ok = QPushButton("Save")
+        ok.setDefault(True)
+        ok.clicked.connect(self.accept)
+        cancel = QPushButton("Cancel")
+        cancel.setProperty("role", "secondary")
+        cancel.clicked.connect(self.reject)
+        buttons = QHBoxLayout()
+        buttons.addStretch()
+        buttons.addWidget(cancel)
+        buttons.addWidget(ok)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(28, 24, 28, 24)
+        layout.addWidget(heading)
+        layout.addWidget(self.speed)
+        layout.addWidget(help_text)
+        layout.addSpacing(16)
+        layout.addLayout(buttons)
+
+    def speed_goal(self) -> int:
+        return self.speed.goal()
