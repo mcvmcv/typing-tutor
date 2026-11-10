@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,6 +7,8 @@ name = "learn-typing"
 version = "0.1.0"
 description = "A friendly touch-typing tutor for kids"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 # 3.12+: PySide6 6.12 has a refcount bug on None that crashes Python 3.11
 # during painting; from 3.12, None is immortal (PEP 683) so it's harmless.
 requires-python = ">=3.12"
@@ -21,6 +23,8 @@ dev = [
     "ruff>=0.6",
     "mypy>=1.11",
 ]
+# For `make app`: builds a standalone app with PyInstaller.
+build = ["pyinstaller>=6.11"]
 
 [project.scripts]
 learn-typing = "typing_tutor.app:main"

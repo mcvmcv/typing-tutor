@@ -194,6 +194,9 @@ class SoundPlayer(QObject):
             self._effects[name] = effects
             self._next_voice[name] = 0
 
+    def effects(self) -> list[QSoundEffect]:
+        return [fx for voices in self._effects.values() for fx in voices]
+
     def play(self, name: str) -> None:
         if not self.enabled or (name == "click" and not self.key_clicks):
             return
