@@ -78,3 +78,12 @@ def test_lesson_plays_chain_to_the_next_step(player):
     assert following is not None and following.step_id == HOME_ROW.step_id(1)
     assert lesson_play(*ALL_STEPS[-1], player).next_play() is None
     assert play.header == "Home Row Heroes · step 1 of 9"
+
+
+def test_lesson_instructions_follow_the_keyboard(player):
+    from typing_tutor import keyboard
+    from typing_tutor.lessons import PUNCTUATION
+
+    assert "press '" in lesson_play(PUNCTUATION, 1, player).instruction
+    keyboard.set_layout("uk")
+    assert "press 2" in lesson_play(PUNCTUATION, 1, player).instruction
