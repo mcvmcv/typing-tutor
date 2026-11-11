@@ -173,6 +173,27 @@ SENTENCES = (
     "Can you count to 100?",
     "There are 60 minutes in an hour.",
     "My team won 4 to 2.",
+    # Punctuation lesson: ! " - and :
+    "What a big splash!",
+    "Look out for the bee!",
+    "We won the game!",
+    "Hooray, it is snowing!",
+    "Wow, what a tall tower!",
+    "Stop, the light is red!",
+    'Mum said, "Time for bed."',
+    '"Can I play?" asked Ben.',
+    '"Look at me!" said the frog.',
+    'Dad said, "Let us go to the park."',
+    '"I like jam," said Zoe.',
+    '"Is it time yet?" asked Max.',
+    "My dog is two years old and well-behaved.",
+    "We ate ice-cream at the seaside.",
+    "Her bike is bright blue-green.",
+    "The sixty-two buses go to town.",
+    "Pack three things: a hat, a map and a snack.",
+    "Here is the plan: eat, play, then sleep.",
+    "The bus leaves at 9:15 each day.",
+    "Shopping list: eggs, milk and jam.",
 )
 
 STORIES = {
