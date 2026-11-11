@@ -50,9 +50,11 @@ class GamePanel(QFrame):
     resume_requested = Signal()
     quit_requested = Signal()
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, difficulties: dict[str, str] | None = None):
         super().__init__(parent)
         self.setObjectName("GamePanel")
+        # key -> button label, e.g. {"easy": "Easy", ...}
+        self.labels = difficulties or {k: d.label for k, d in DIFFICULTIES.items()}
         self.title = label("", "Title")
         self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.message = label("", "Instruction", wrap=True)
@@ -61,8 +63,8 @@ class GamePanel(QFrame):
 
         self.difficulty_row = QHBoxLayout()
         self.difficulty_buttons = {}
-        for key, diff in DIFFICULTIES.items():
-            btn = QPushButton(diff.label)
+        for key, text in self.labels.items():
+            btn = QPushButton(text)
             btn.setFocusPolicy(Qt.FocusPolicy.NoFocus)
             btn.setMinimumWidth(120)
             btn.clicked.connect(lambda _=False, k=key: self.difficulty_chosen.emit(k))
@@ -91,13 +93,18 @@ class GamePanel(QFrame):
         layout.addLayout(bottom)
 
     def show_choices(
-        self, title: str, message: str, best: dict[str, int], paused: bool = False
+        self,
+        title: str,
+        message: str,
+        best: dict[str, int] | dict[str, float],
+        paused: bool = False,
+        best_text: Callable[[float], str] = lambda v: f"{v:g}",
     ) -> None:
         self.title.setText(title)
         self.message.setText(message)
         for key, btn in self.difficulty_buttons.items():
-            label = DIFFICULTIES[key].label
-            btn.setText(f"{label}\nBest {best[key]}" if best.get(key) else label)
+            label = self.labels[key]
+            btn.setText(f"{label}\nBest {best_text(best[key])}" if best.get(key) else label)
             btn.setVisible(not paused)
         self.resume.setVisible(paused)
         self.adjustSize()

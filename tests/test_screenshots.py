@@ -19,7 +19,15 @@ def test_screenshot_script_makes_every_picture(qapp, tmp_path, monkeypatch):
     monkeypatch.setattr("typing_tutor.sounds.SoundPlayer.play", lambda self, name: None)
     saved = script.main(tmp_path)
     names = {p.stem for p in saved}
-    assert names == {"players", "lessons", "practice", "balloon-pop", "progress", "grown-ups"}
+    assert names == {
+        "players",
+        "lessons",
+        "practice",
+        "balloon-pop",
+        "snail-race",
+        "progress",
+        "grown-ups",
+    }
     for path in saved:
         image = QImage(str(path))
         assert (image.width(), image.height()) == script.SIZE, path.name
