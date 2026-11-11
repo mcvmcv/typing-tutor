@@ -1,10 +1,13 @@
 import json
 from dataclasses import asdict
+from datetime import datetime, timedelta
 
 import pytest
 from conftest import finish_steps, key_stat
 
 from typing_tutor.storage import (
+    DAILY_COPIES,
+    EVENT_COPIES,
     KEY_STATS_WINDOW,
     BackupError,
     Profile,
@@ -248,3 +251,108 @@ def test_backups_leave_the_keyboard_behind(store, player, tmp_path):
     other = ProfileStore(tmp_path / "other.json")
     other.import_profiles(read_backup(backup))
     assert other.keyboard is None
+
+
+# Automatic copies -----------------------------------------------------------
+
+
+class Clock:
+    def __init__(self) -> None:
+        self.now = datetime(2026, 11, 10, 17, 0)
+
+    def __call__(self) -> datetime:
+        return self.now
+
+    def advance(self, **kwargs) -> None:
+        self.now += timedelta(**kwargs)
+
+
+@pytest.fixture
+def clocked(tmp_path):
+    store = ProfileStore(tmp_path / "profiles.json")
+    store.clock = Clock()
+    return store
+
+
+def test_no_copy_before_anything_is_saved(clocked):
+    clocked.add("Sam", "#64b5f6")  # the very first save: nothing to keep yet
+    assert clocked.snapshots() == []
+
+
+def test_one_copy_a_day_of_the_progress_before_the_days_first_change(clocked):
+    sam = clocked.add("Sam", "#64b5f6")
+    clocked.clock.advance(days=1)
+    clocked.record_result(sam.id, "home-row/fj", 10, 95, 3)
+    clocked.record_result(sam.id, "home-row/dk", 10, 95, 3)  # same day: no new copy
+    [snap] = clocked.snapshots()
+    assert snap.reason == "Start of the day" and snap.names == ["Sam"]
+    assert snap.made == clocked.clock.now
+    assert read_backup(snap.path)[0].best == {}  # as it was before today's practice
+
+
+def test_only_a_week_of_daily_copies_is_kept(clocked):
+    sam = clocked.add("Sam", "#64b5f6")
+    for _ in range(DAILY_COPIES + 3):
+        clocked.clock.advance(days=1)
+        clocked.set_speed_goal(sam.id, 10)
+    snaps = clocked.snapshots()
+    assert len(snaps) == DAILY_COPIES
+    assert snaps[0].made == clocked.clock.now  # the newest are kept
+
+
+def test_removing_a_player_keeps_a_copy_first(clocked):
+    sam = clocked.add("Sam", "#64b5f6")
+    clocked.add("Ava", "#ffb74d")
+    clocked.delete(sam.id)
+    snap = next(s for s in clocked.snapshots() if s.reason == "Before removing Sam")
+    assert snap.names == ["Sam", "Ava"]
+    clocked.restore(snap)
+    assert [p.name for p in clocked.profiles] == ["Sam", "Ava"]
+    assert clocked.snapshots()[0].reason == "Before going back to an earlier copy"
+
+
+def test_loading_a_backup_keeps_a_copy_first(clocked, tmp_path):
+    clocked.add("Sam", "#64b5f6")
+    other = ProfileStore(tmp_path / "other.json")
+    other.add("Ava", "#ffb74d")
+    clocked.import_profiles(other.profiles)
+    assert any(s.reason == "Before loading a backup" for s in clocked.snapshots())
+
+
+def test_only_the_last_few_event_copies_are_kept(clocked):
+    for i in range(EVENT_COPIES + 3):
+        clocked.add(f"P{i}", "#64b5f6")
+        clocked.clock.advance(seconds=1)
+        clocked.snapshot(f"event {i}")
+    events = [s for s in clocked.snapshots() if s.reason.startswith("event")]
+    assert len(events) == EVENT_COPIES
+    assert events[0].reason == f"event {EVENT_COPIES + 2}"
+
+
+def test_strange_files_in_the_backups_folder_are_ignored(clocked):
+    clocked.add("Sam", "#64b5f6")
+    clocked.snapshot("kept")
+    (clocked.snapshot_dir / "notes.json").write_text("not json")
+    (clocked.snapshot_dir / "other.json").write_text(json.dumps({"profiles": []}))
+    assert [s.reason for s in clocked.snapshots()] == ["kept"]
+
+
+def test_a_damaged_copy_is_not_restored(clocked):
+    sam = clocked.add("Sam", "#64b5f6")
+    clocked.snapshot("kept")
+    [snap] = clocked.snapshots()
+    data = json.loads(snap.path.read_text())
+    data["profiles"][0]["history"] = "broken"
+    snap.path.write_text(json.dumps(data))
+    clocked.delete(sam.id)
+    with pytest.raises(BackupError):
+        clocked.restore(snap)
+    assert clocked.profiles == []
+
+
+def test_a_copy_that_cant_be_written_doesnt_stop_saving(clocked):
+    sam = clocked.add("Sam", "#64b5f6")
+    clocked.snapshot_dir.write_text("a file where the folder should be")
+    clocked.clock.advance(days=1)
+    clocked.set_speed_goal(sam.id, 15)
+    assert ProfileStore(clocked.path).get(sam.id).speed_goal == 15

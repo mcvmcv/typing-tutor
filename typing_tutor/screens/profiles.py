@@ -135,7 +135,9 @@ class ProfileScreen(QWidget):
         answer = QMessageBox.question(
             self,
             "Remove player",
-            f"Remove {profile.name} and all their progress?\nThis can't be undone.",
+            f"Remove {profile.name} and all their progress?\n\n"
+            "If it's a mistake, a grown-up can bring them back for a while from "
+            "For grown-ups \u2192 Earlier copies.",
         )
         if answer != QMessageBox.StandardButton.Yes:
             return False

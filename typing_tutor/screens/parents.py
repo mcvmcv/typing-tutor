@@ -9,11 +9,13 @@ from PySide6.QtCore import QStandardPaths, Qt, Signal
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QButtonGroup,
+    QDialog,
     QFileDialog,
     QFrame,
     QGridLayout,
     QHBoxLayout,
     QLabel,
+    QListWidget,
     QMessageBox,
     QPushButton,
     QScrollArea,
@@ -24,7 +26,7 @@ from PySide6.QtWidgets import (
 from .. import keyboard
 from ..keyboard import fingers_for_char
 from ..progress import Overview, days_ago, overview
-from ..storage import BackupError, ImportPlan, Profile, ProfileStore, read_backup
+from ..storage import BackupError, ImportPlan, Profile, ProfileStore, Snapshot, read_backup
 from ..theme import INK, finger_color
 from ..ui import clear_layout, label
 from .menu import chip_text
@@ -85,6 +87,65 @@ def import_summary(plan: ImportPlan) -> str:
             "backup's, which can't be undone."
         )
     return "\n\n".join([*lines, "Load the backup?"])
+
+
+def when_text(made: datetime, now: datetime | None = None) -> str:
+    """E.g. "Today, 9:05", "Yesterday, 17:30" or "Monday 9 November, 17:30"."""
+    now = now or datetime.now()
+    time = f"{made.hour}:{made.minute:02d}"
+    days = (now.date() - made.date()).days
+    if days == 0:
+        return f"Today, {time}"
+    if days == 1:
+        return f"Yesterday, {time}"
+    return f"{made.strftime('%A')} {made.day} {made.strftime('%B')}, {time}"
+
+
+def snapshot_text(snap: Snapshot, now: datetime | None = None) -> str:
+    players = _names(snap.names) if snap.names else "no players"
+    return f"{when_text(snap.made, now)}  ·  {snap.reason}\n{players}"
+
+
+class EarlierCopiesDialog(QDialog):
+    """Pick an automatic copy to go back to."""
+
+    def __init__(self, snapshots: list[Snapshot], now: datetime | None = None, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Earlier copies")
+        self.setMinimumSize(560, 520)
+        self.snapshots = snapshots
+        intro = label(
+            "Learn Typing keeps a copy of everyone's progress each day, and just "
+            "before a player is removed or a backup is loaded. Pick one to go back to.",
+            "Subtitle",
+            wrap=True,
+        )
+        self.list = QListWidget()
+        for snap in snapshots:
+            self.list.addItem(snapshot_text(snap, now))
+        self.list.setCurrentRow(0)
+        self.list.itemDoubleClicked.connect(self.accept)
+        self.restore_btn = QPushButton("Go back to this copy")
+        self.restore_btn.setDefault(True)
+        self.restore_btn.clicked.connect(self.accept)
+        cancel = QPushButton("Cancel")
+        cancel.setProperty("role", "secondary")
+        cancel.clicked.connect(self.reject)
+        buttons = QHBoxLayout()
+        buttons.addStretch()
+        buttons.addWidget(cancel)
+        buttons.addWidget(self.restore_btn)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(28, 24, 28, 24)
+        layout.setSpacing(14)
+        layout.addWidget(label("Go back to an earlier copy", "Heading"))
+        layout.addWidget(intro)
+        layout.addWidget(self.list, 1)
+        layout.addLayout(buttons)
+
+    def chosen(self) -> Snapshot | None:
+        row = self.list.currentRow()
+        return self.snapshots[row] if 0 <= row < len(self.snapshots) else None
 
 
 class PlayerCard(QFrame):
@@ -174,8 +235,10 @@ class ParentScreen(QWidget):
         self.load_btn.setProperty("role", "secondary")
         self.load_btn.setToolTip("Bring in players from a backup file, e.g. from another computer")
         self.load_btn.clicked.connect(self.load_backup)
-        top.addWidget(self.save_btn, 0, Qt.AlignmentFlag.AlignTop)
-        top.addWidget(self.load_btn, 0, Qt.AlignmentFlag.AlignTop)
+        self.copies_btn = QPushButton("Earlier copies…")
+        self.copies_btn.setProperty("role", "secondary")
+        self.copies_btn.setToolTip("Go back to an automatic copy, e.g. to undo removing a player")
+        self.copies_btn.clicked.connect(self.open_earlier_copies)
 
         self.cards_box = QVBoxLayout()
         self.cards_box.setSpacing(14)
@@ -202,7 +265,6 @@ class ParentScreen(QWidget):
         self.layout_group = QButtonGroup(self)
         keys_row = QHBoxLayout()
         keys_row.setSpacing(8)
-        keys_row.addWidget(label("Keyboard:", "Heading"))
         for kb in keyboard.LAYOUTS.values():
             btn = QPushButton(kb.name)
             btn.setCheckable(True)
@@ -217,13 +279,28 @@ class ParentScreen(QWidget):
         keys_row.addWidget(self.layout_note)
         keys_row.addStretch()
 
+        backup_row = QHBoxLayout()
+        backup_row.setSpacing(8)
+        for btn in (self.save_btn, self.load_btn, self.copies_btn):
+            backup_row.addWidget(btn)
+        backup_row.addStretch()
+
+        settings = QGridLayout()
+        settings.setHorizontalSpacing(16)
+        settings.setVerticalSpacing(10)
+        settings.addWidget(label("Keyboard:", "Heading"), 0, 0)
+        settings.addLayout(keys_row, 0, 1)
+        settings.addWidget(label("Progress:", "Heading"), 1, 0)
+        settings.addLayout(backup_row, 1, 1)
+        settings.setColumnStretch(1, 1)
+
         layout = QVBoxLayout(self)
         layout.setContentsMargins(40, 24, 40, 24)
         layout.setSpacing(16)
         layout.addLayout(top)
         layout.addWidget(self.scroll_area, 1)
-        layout.addLayout(keys_row)
         layout.addWidget(note)
+        layout.addLayout(settings)
         self.cards: list[PlayerCard] = []
 
     def refresh(self, now: datetime | None = None) -> None:
@@ -244,6 +321,7 @@ class ParentScreen(QWidget):
                 )
             )
         self.save_btn.setEnabled(bool(self.cards))
+        self.copies_btn.setEnabled(bool(self.store.snapshots()))
         self._show_keyboard()
 
     # Keyboard layout -----------------------------------------------------
@@ -319,3 +397,35 @@ class ParentScreen(QWidget):
     def confirm_import(self, plan: ImportPlan) -> bool:
         answer = QMessageBox.question(self, "Load this backup?", import_summary(plan))
         return answer == QMessageBox.StandardButton.Yes
+
+    # Earlier copies --------------------------------------------------------
+
+    def open_earlier_copies(self) -> None:
+        dialog = EarlierCopiesDialog(self.store.snapshots(), parent=self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            snap = dialog.chosen()
+            if snap is not None:
+                self.restore_snapshot(snap)
+
+    def restore_snapshot(self, snap: Snapshot) -> bool:
+        answer = QMessageBox.question(
+            self,
+            "Go back to this copy?",
+            f"Everyone's progress will go back to how it was then:\n"
+            f"{when_text(snap.made)} ({snap.reason.lower()}).\n\n"
+            "A copy of how things are now is kept first, so you can change your mind.",
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            return False
+        try:
+            self.store.restore(snap)
+        except BackupError as e:
+            QMessageBox.warning(self, "Can't go back to this copy", str(e))
+            return False
+        except OSError as e:
+            QMessageBox.warning(
+                self, "Progress not changed", f"Progress couldn't be saved:\n{e.strerror or e}"
+            )
+            return False
+        self.refresh()
+        return True

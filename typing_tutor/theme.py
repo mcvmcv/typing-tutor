@@ -86,6 +86,12 @@ QComboBox {{
     border-radius: 10px; background: white;
 }}
 QCheckBox {{ font-size: 17px; spacing: 10px; }}
+QListWidget {{
+    font-size: 16px; color: {INK}; background: white;
+    border: 2px solid #e8dcc2; border-radius: 12px; padding: 6px;
+}}
+QListWidget::item {{ padding: 10px; border-radius: 8px; }}
+QListWidget::item:selected {{ background: #ffe08a; color: {INK}; }}
 QCheckBox::indicator {{ width: 22px; height: 22px; }}
 QFrame#GamePanel {{ background: white; border: 3px solid #e8dcc2; border-radius: 22px; }}
 QFrame#Panel {{ background: #fff1cc; border-radius: 16px; }}
