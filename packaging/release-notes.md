@@ -1,3 +1,10 @@
+## What's new in 0.3.0
+
+- **Save and load backups.** "For grown-ups" has **Save a backup…** and **Load a backup…**, to keep progress safe or move everyone to another computer.
+- **UK keyboards.** Pick **US** or **UK** on the grown-ups screen; the on-screen keyboard and finger hints follow it. It's guessed from your computer's region until you choose.
+- **Spaces without dots.** Each player can turn off the dots that show spaces, in Settings.
+- Symbol keys on the on-screen keyboard now show their Shift character too.
+
 ## Download and play
 
 No Python needed. Pick the file for your computer from **Assets** below.

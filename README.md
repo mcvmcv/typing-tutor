@@ -198,7 +198,8 @@ make icon       # redraw the app icon (PNG, Windows .ico, macOS .icns, favicon)
   by hand from the Actions tab (**Build apps → Run workflow**). `--smoke-test` starts the built
   app with throwaway data, types a key, checks the sounds load and play, and
   exits.
-- **Releasing:** bump `version` in `pyproject.toml`, commit, then
+- **Releasing:** bump `version` in `pyproject.toml`, update "What's new" in
+  `packaging/release-notes.md`, commit, then
   `git tag v<version> && git push --tags`. The build workflow publishes a
   GitHub Release with the apps attached.
 - `typing_tutor/ui.py` has small widget helpers; use `label(text, name)` rather
