@@ -23,14 +23,33 @@ a = Analysis(
 # Qt plugins the app never uses, and the libraries only they need: the media
 # player backend (FFmpeg; QSoundEffect doesn't use it), the on-screen virtual
 # keyboard (Qt Quick and QML) and PDF image loading. Dropping them shrinks
-# the build by about a fifth. `--smoke-test` checks the result still works.
+# the build by about a fifth. Also image-format and icon plugins (the app's
+# only image is a PNG, which Qt reads without a plugin) and the GTK theme
+# plugin, which on Linux drags in the whole GTK desktop stack. `--smoke-test`
+# checks the result still works.
 UNUSED = re.compile(
     r"plugins[/\\]multimedia|virtualkeyboard|qpdf|qt6?(quick|qml|pdf)"
-    r"|(avcodec|avformat|avutil|swresample|swscale)",
+    r"|(avcodec|avformat|avutil|swresample|swscale)"
+    r"|plugins[/\\](imageformats|iconengines)|qt6svg|platformthemes[/\\]libqgtk3",
     re.IGNORECASE,
 )
 a.binaries = [b for b in a.binaries if not UNUSED.search(b[0])]
 a.datas = [d for d in a.datas if not UNUSED.search(d[0])]
+
+if sys.platform.startswith("linux"):
+    # PyInstaller also bundles the system libraries each binary needs, e.g.
+    # GTK for the plugin dropped above. Keep only those still needed by what's
+    # left: Qt, Python and its extension modules.
+    from PyInstaller.depend.bindepend import get_imports
+
+    def _bundled(dest):
+        return "/" in dest or dest.startswith("libpython")
+
+    needed = set()
+    for dest, src, _kind in a.binaries:
+        if _bundled(dest):
+            needed |= {name for name, _path in get_imports(src)}
+    a.binaries = [b for b in a.binaries if _bundled(b[0]) or b[0] in needed]
 
 pyz = PYZ(a.pure)
 
