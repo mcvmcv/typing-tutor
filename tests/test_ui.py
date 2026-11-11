@@ -14,6 +14,7 @@ from typing_tutor.lessons import ALL_STEPS, CAPITALS, HOME_ROW, TOP_ROW
 from typing_tutor.screens import practice as practice_module
 from typing_tutor.screens.profiles import NewPlayerDialog, SettingsDialog
 from typing_tutor.sounds import SoundPlayer
+from typing_tutor.storage import ProfileStore
 from typing_tutor.widgets.keyboard_view import KeyboardView
 
 
@@ -188,6 +189,7 @@ def test_settings_dialog_reflects_and_returns_choices(qtbot, store, player):
     dlg = SettingsDialog(player)
     qtbot.addWidget(dlg)
     assert dlg.speed_goal() == 30 and dlg.sound_on() and dlg.key_clicks_on()
+    assert dlg.space_dots_on()
     dlg.sound.setChecked(False)
     assert not dlg.clicks.isEnabled() and not dlg.sound_on()
 
@@ -279,6 +281,56 @@ def test_saving_settings_updates_the_player(monkeypatch, window, player):
     window.menu.settings_requested.emit()
     assert player.speed_goal == 30 and player.sound and not player.key_clicks
     assert window.sounds.key_clicks is False
+
+
+def test_turning_space_dots_off(monkeypatch, store, window, player):
+    def fake_exec(dialog):
+        dialog.dots.setChecked(False)
+        return QDialog.DialogCode.Accepted
+
+    monkeypatch.setattr(SettingsDialog, "exec", fake_exec)
+    assert window.practice.typing.space_dots
+    window.menu.settings_requested.emit()
+    assert window.practice.typing.space_dots is False
+    assert ProfileStore(store.path).get(player.id).space_dots is False
+
+
+def test_each_player_gets_their_own_space_dots(window, store, player):
+    other = store.add("Ava", "#ffb74d")
+    store.set_space_dots(other.id, False)
+    window.choose_profile(other.id)
+    assert window.practice.typing.space_dots is False
+    window.choose_profile(player.id)
+    assert window.practice.typing.space_dots is True
+
+
+def test_typing_line_without_space_dots(qtbot, monkeypatch):
+    from PySide6.QtGui import QPainter
+
+    from typing_tutor.session import TypingSession
+    from typing_tutor.widgets.typing_view import TypingView
+
+    drawn: list[str] = []
+    real = QPainter.drawText
+
+    def record(painter, *args):
+        drawn.append(args[-1])
+        return real(painter, *args)
+
+    monkeypatch.setattr(QPainter, "drawText", record)
+
+    def glyphs(dots: bool) -> str:
+        drawn.clear()
+        view = TypingView()
+        qtbot.addWidget(view)
+        view.resize(600, 110)
+        view.space_dots = dots
+        view.set_session(TypingSession("ab cd ef"))
+        view.grab()
+        return "".join(drawn)
+
+    assert glyphs(True) == "ab·cd·ef"
+    assert glyphs(False) == "abcdef"
 
 
 def test_creating_a_player_from_the_player_screen(monkeypatch, qtbot, store, played):

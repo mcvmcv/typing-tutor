@@ -124,6 +124,8 @@ class Profile:
     # Balloon Pop best score per difficulty.
     game_best: dict[str, int] = field(default_factory=dict)
     key_clicks: bool = True
+    # Show upcoming spaces in the typing line as centred dots.
+    space_dots: bool = True
 
     def stars(self, step_id: str) -> int:
         return self.best.get(step_id, {}).get("stars", 0)
@@ -243,6 +245,12 @@ class ProfileStore:
             profile.sound = sound
             if key_clicks is not None:
                 profile.key_clicks = key_clicks
+            self.save()
+
+    def set_space_dots(self, profile_id: str, on: bool) -> None:
+        profile = self.get(profile_id)
+        if profile is not None:
+            profile.space_dots = on
             self.save()
 
     def record_game(self, profile_id: str, difficulty: str, score: int, key_stats: dict) -> bool:

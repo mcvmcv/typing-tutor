@@ -114,6 +114,12 @@ fanfare) are generated on first run into the user's cache folder (e.g.
 player can turn sounds or just key clicks off in Settings, or use the
 Sound button on the practice screen.
 
+## Typing line
+
+Upcoming spaces in the line being typed show as faint centred dots ( · ) so
+they aren't missed. Each player can turn the dots off in Settings; the
+highlighted cursor still shows when a space is next.
+
 ## Progress screen
 
 "My progress" on the lesson menu shows best speed, recent accuracy, stars,
