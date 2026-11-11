@@ -142,6 +142,12 @@ checked first, so a wrong or damaged file is refused with an explanation. New
 players are added (renamed, e.g. "Mia 2", if the name is taken), and if a
 player is already here it asks before replacing their progress.
 
+**Updates:** tick "Tell me when a new version is out" and the app asks
+GitHub for the latest release each time it starts, and says on this screen
+if there's a newer one, with a download link. It's off until you turn it on.
+The request only carries the app's name and version, nothing about the
+players. Otherwise the app never goes online.
+
 **Earlier copies:** the app also keeps copies by itself, in a `backups`
 folder next to `profiles.json`. It keeps one a day for the last week (how
 things were before that day's first change), and one just before a player is
@@ -209,7 +215,7 @@ make icon       # redraw the app icon (PNG, Windows .ico, macOS .icns, favicon)
   by hand from the Actions tab (**Build apps → Run workflow**). `--smoke-test` starts the built
   app with throwaway data, types a key, checks the sounds load and play, and
   exits.
-- **Releasing:** bump `version` in `pyproject.toml`, update "What's new" in
+- **Releasing:** bump `__version__` in `typing_tutor/__init__.py`, update "What's new" in
   `packaging/release-notes.md`, commit, then
   `git tag v<version> && git push --tags`. The build workflow publishes a
   GitHub Release with the apps attached.

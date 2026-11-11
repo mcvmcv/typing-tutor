@@ -359,3 +359,74 @@ def test_when_text(made, text):
     from typing_tutor.screens.parents import when_text
 
     assert when_text(made, NOW) == text
+
+
+# New-version check ---------------------------------------------------------------
+
+
+@pytest.fixture
+def github(monkeypatch):
+    from test_updates import FakeGitHub
+
+    return FakeGitHub(monkeypatch)
+
+
+def test_update_check_is_off_and_offline_by_default(window, store, github):
+    window.show_parents()
+    assert not window.parents.updates_box.isChecked()
+    assert github.requests == []
+
+
+def test_turning_on_update_checks_asks_github(window, store, github):
+    window.show_parents()
+    window.parents.updates_box.setChecked(True)
+    assert store.check_updates and len(github.requests) == 1
+    assert window.parents.update_note.text() == "Checking…"
+    github.answer("v99.0.0")
+    note = window.parents.update_note.text()
+    assert "Version 99.0.0 is out!" in note and "Download it" in note
+
+
+def test_already_up_to_date(window, github):
+    from typing_tutor import __version__
+
+    window.parents.updates_box.setChecked(True)
+    github.answer(f"v{__version__}")
+    assert "latest version" in window.parents.update_note.text()
+
+
+def test_a_failed_check_says_so(window, github):
+    from PySide6.QtNetwork import QNetworkReply
+
+    window.parents.updates_box.setChecked(True)
+    github.answer(error=QNetworkReply.NetworkError.TimeoutError)
+    assert "Couldn't check" in window.parents.update_note.text()
+
+
+def test_turning_update_checks_off_clears_the_note(window, store, github):
+    window.parents.updates_box.setChecked(True)
+    github.answer("v99.0.0")
+    window.parents.updates_box.setChecked(False)
+    assert not store.check_updates and window.parents.update_note.text() == ""
+
+
+def test_checks_at_start_when_turned_on(qtbot, store, github):
+    store.set_check_updates(True)
+    w = MainWindow(store)
+    qtbot.addWidget(w)
+    assert len(github.requests) == 1
+    github.answer("v99.0.0")
+    w.show_parents()  # the news is waiting on the grown-ups' screen
+    assert w.parents.updates_box.isChecked()
+    assert "99.0.0 is out" in w.parents.update_note.text()
+
+
+def test_parent_screen_works_without_a_checker(qtbot, store, player):
+    from typing_tutor.screens.parents import ParentScreen
+
+    screen = ParentScreen(store)
+    qtbot.addWidget(screen)
+    screen.refresh()
+    store.check_updates = True
+    screen.set_check_updates(True)
+    assert screen.update_note.text() == ""

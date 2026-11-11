@@ -160,6 +160,8 @@ class ProfileStore:
         # The computer's keyboard layout ("us" or "uk"), or None if never chosen.
         # It belongs to this computer, so backups don't carry it.
         self.keyboard: str | None = None
+        # Ask GitHub for a newer version at start-up. Off unless a grown-up turns it on.
+        self.check_updates = False
         self.clock = datetime.now  # replaceable in tests
         self.load()
 
@@ -176,6 +178,7 @@ class ProfileStore:
             self.profiles = [Profile.from_dict(p) for p in data.get("profiles", [])]
             keyboard = data.get("keyboard")
             self.keyboard = keyboard if isinstance(keyboard, str) else None
+            self.check_updates = data.get("check_updates") is True
         except (OSError, ValueError, TypeError):
             # Keep the unreadable file so progress isn't silently lost.
             stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -187,7 +190,13 @@ class ProfileStore:
         data: dict = {"version": 1, "profiles": [asdict(p) for p in self.profiles]}
         if self.keyboard:
             data["keyboard"] = self.keyboard
+        if self.check_updates:
+            data["check_updates"] = True
         _write_json(self.path, data)
+
+    def set_check_updates(self, on: bool) -> None:
+        self.check_updates = on
+        self.save()
 
     def set_keyboard(self, code: str) -> None:
         self.keyboard = code

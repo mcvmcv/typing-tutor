@@ -21,6 +21,7 @@ from .screens.progress_screen import ProgressScreen
 from .sounds import SoundPlayer
 from .storage import Profile, ProfileStore
 from .theme import apply_theme
+from .updates import UpdateChecker
 
 
 class MainWindow(QMainWindow):
@@ -39,7 +40,8 @@ class MainWindow(QMainWindow):
         self.sounds = SoundPlayer(sound_folder, parent=self)
         self.practice = PracticeScreen(self.sounds)
         self.progress = ProgressScreen()
-        self.parents = ParentScreen(store)
+        self.updates = UpdateChecker(self)
+        self.parents = ParentScreen(store, self.updates)
         self.game = GameScreen(self.sounds)
         self.game.record_game = self._record_game
         self.stack = QStackedWidget()
@@ -63,6 +65,8 @@ class MainWindow(QMainWindow):
         self.practice.menu_requested.connect(self.show_menu)
         self.practice.step_completed.connect(self._record)
         self.practice.sound_toggled.connect(lambda on: self.store.set_sound(self.profile.id, on))
+        if store.check_updates:
+            self.updates.check()
 
     @property
     def profile(self) -> Profile:

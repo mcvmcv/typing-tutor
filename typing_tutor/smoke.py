@@ -18,6 +18,7 @@ from pathlib import Path
 from PySide6.QtCore import QCoreApplication, QEvent, Qt
 from PySide6.QtGui import QKeyEvent
 from PySide6.QtMultimedia import QMediaDevices, QSoundEffect
+from PySide6.QtNetwork import QSslSocket
 from PySide6.QtWidgets import QApplication
 
 from .lessons import HOME_ROW
@@ -75,6 +76,9 @@ def run(app: QApplication, timeout: float = 10.0) -> int:
         played = has_output and loaded and _plays(app, effects[0])
         typed = line.pos
         has_icon = not app_icon().isNull()  # the icon file made it into the build
+        # The update check needs HTTPS, which comes from a Qt TLS plugin.
+        has_tls = QSslSocket.supportsSsl()
+        tls_backend = QSslSocket.activeBackend() or "no TLS backend"
         window.close()
 
     def verdict(ok: bool) -> str:
@@ -83,6 +87,7 @@ def run(app: QApplication, timeout: float = 10.0) -> int:
     report = [
         f"window:   ok (Qt platform: {app.platformName()})",
         f"icon:     {'ok' if has_icon else 'FAILED'}",
+        f"https:    {'ok' if has_tls else 'FAILED'} ({tls_backend})",
         f"typing:   {'ok' if typed == 1 else 'FAILED'} (typed {typed} of 1 key)",
         f"sounds:   {'ok' if created else 'FAILED'} ({len(effects)} effects created)",
         f"loading:  {verdict(loaded)} ({dict(statuses)})",
@@ -90,7 +95,7 @@ def run(app: QApplication, timeout: float = 10.0) -> int:
     ]
     _show("\n".join(report))
     sound_ok = created and (played or not has_output)
-    return 0 if typed == 1 and sound_ok and has_icon else 1
+    return 0 if typed == 1 and sound_ok and has_icon and has_tls else 1
 
 
 def _show(text: str) -> None:
