@@ -225,4 +225,33 @@ STORIES = {
         "it was a planet. Ava wished on a shooting star. She won't tell "
         "anyone what she wished for.",
     ),
+    # These come after Punctuation Pros, so they can use ! " - and :
+    "puddles": (
+        "Puddle Day",
+        "It rained all morning. When it stopped, Leo put on his yellow boots "
+        'and ran outside. "Look at this one!" he shouted, and jumped into the '
+        "biggest puddle on the street. Splash! Mum laughed and said, "
+        '"Now your socks are wet too."',
+    ),
+    "garden": (
+        "The Tiny Garden",
+        "Nia planted five seeds in a pot by the window. She gave them water "
+        "every day and sang to them. After two weeks, a little green shoot "
+        "poked out of the soil. Then another and another! By the summer, Nia "
+        "had a pot full of bright, sweet-smelling flowers.",
+    ),
+    "robot": (
+        "Bolt the Robot",
+        "Bolt was a small robot with one job: to tidy the toy box. Every night "
+        "he picked up the blocks, the cars and the teddy bears. One night he "
+        'found a lost marble under the bed. "Got you!" he beeped. The next '
+        "morning, Rosa found it on her pillow.",
+    ),
+    "sock": (
+        "The Missing Sock",
+        "Every week, one of Gus's socks went missing. He looked under the bed, "
+        "in the bath and behind the sofa. Then he saw the cat curled up in her "
+        "basket. Under her was a cosy nest made of socks: red ones, blue ones "
+        'and one with stripes. "Well," said Gus, "at least they are warm."',
+    ),
 }
