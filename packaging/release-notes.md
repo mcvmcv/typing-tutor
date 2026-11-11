@@ -1,9 +1,11 @@
-## What's new in 0.3.0
+## What's new in 0.4.0
 
-- **Save and load backups.** "For grown-ups" has **Save a backup…** and **Load a backup…**, to keep progress safe or move everyone to another computer.
-- **UK keyboards.** Pick **US** or **UK** on the grown-ups screen; the on-screen keyboard and finger hints follow it. It's guessed from your computer's region until you choose.
-- **Spaces without dots.** Each player can turn off the dots that show spaces, in Settings.
-- Symbol keys on the on-screen keyboard now show their Shift character too.
+- **Snail Race.** A second game: race Shelly the snail to the flag, one key at a time. She races at a speed set from your own typing, so every race is close.
+- **More to learn.** A new **Punctuation Pros** lesson (! " - and :) and four more stories in Story Time. The course is now 48 steps.
+- **Bigger text.** Each player can pick Normal, Large or Extra large text in Settings.
+- **Earlier copies.** The app now keeps copies of everyone's progress by itself, every day and before anything big. **For grown-ups → Earlier copies…** can go back to one, e.g. to undo removing a player.
+- **New-version notice.** Grown-ups can turn on **Tell me when a new version is out**. It's off unless you turn it on, and nothing about the players is sent.
+- **Smaller Linux download** (about 65 MB, down from 72 MB).
 
 ## Download and play
 
