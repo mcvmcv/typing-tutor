@@ -20,7 +20,7 @@ from typing_tutor.keyboard import (
     set_layout,
 )
 from typing_tutor.keyboard import system_layout as real_system_layout  # before conftest patches it
-from typing_tutor.lessons import KNOWN
+from typing_tutor.lessons import ALL_STEPS, KNOWN
 
 
 def test_every_row_is_the_same_width():
@@ -94,14 +94,18 @@ def test_every_layout_is_rectangular_with_unique_keys(layout):
 
 
 @pytest.mark.parametrize("layout", LAYOUTS.values(), ids=lambda layout: layout.code)
-def test_the_course_types_the_same_on_every_layout(layout):
-    # Every taught key is in the same place with the same finger, so the
-    # lessons' wording is right on both keyboards.
-    taught = set().union(*KNOWN.values())
-    for ch in taught:
-        assert [k.fingers for k in layout.keys_for_char(ch)] == [
-            k.fingers for k in US.keys_for_char(ch)
-        ], ch
+def test_keys_that_move_get_their_own_wording(layout):
+    # Where a taught key is somewhere else on this keyboard, the step that
+    # introduces it must explain it for this keyboard.
+    moved = set()
+    for lesson, i in ALL_STEPS:
+        step = lesson.steps[i]
+        for ch in step.new:
+            here = [k.fingers for k in layout.keys_for_char(ch)]
+            if here != [k.fingers for k in US.keys_for_char(ch)] and ch not in moved:
+                moved.add(ch)
+                assert step.instruction_for(layout.code) != step.instruction, (step.title, ch)
+    assert moved == (set() if layout is US else {'"'})
 
 
 def test_uk_symbols(uk):

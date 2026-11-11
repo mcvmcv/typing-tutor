@@ -53,10 +53,10 @@ def test_shows_a_card_for_each_player(qtbot, window, store, player):
     assert window.stack.currentWidget() is window.parents
     window.parents.refresh(NOW)
     sam_card, mia_card = window.parents.cards
-    assert sam_card.values["Steps done"] == "0 of 40"
+    assert sam_card.values["Steps done"] == "0 of 44"
     assert sam_card.values["Last practised"] == "Not yet"
     assert sam_card.tricky_text == "not enough typing yet to tell"
-    assert mia_card.values["Steps done"] == "9 of 40"
+    assert mia_card.values["Steps done"] == "9 of 44"
     assert mia_card.values["Best speed"] == "14 WPM"
     assert mia_card.values["Balloon Pop"] == "420"
     assert mia_card.tricky_text == ""  # shown as chips instead

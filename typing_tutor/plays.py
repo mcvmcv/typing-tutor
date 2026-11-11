@@ -6,6 +6,7 @@ import random
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from . import keyboard
 from .generator import build_lines, drill_line, words_line
 from .keyboard import char_name
 from .lessons import ALL_STEPS, KNOWN, Lesson, next_step
@@ -43,7 +44,7 @@ def lesson_play(lesson: Lesson, index: int, profile: Profile) -> Play:
     return Play(
         step_id=lesson.step_id(index),
         title=step.title,
-        instruction=step.instruction,
+        instruction=step.instruction_for(keyboard.current().code),
         header=f"{lesson.title} · step {index + 1} of {len(lesson.steps)}",
         make_lines=lambda: build_lines(lesson, index),
         speed_goal=round(goal),
