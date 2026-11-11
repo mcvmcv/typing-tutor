@@ -12,6 +12,7 @@ from ..theme import FIXED, GOOD, INK
 PENDING = QColor("#9a9182")
 CURSOR = QColor("#ffe08a")
 CURSOR_ERROR = QColor("#ffb3b3")
+BASE_HEIGHT = 110
 
 
 class TypingView(QWidget):
@@ -21,10 +22,15 @@ class TypingView(QWidget):
         # Upcoming spaces show as a faint centred dot so they aren't missed.
         self.space_dots = True
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.setFixedHeight(110)
+        self.set_scale(1.0)
+
+    def set_scale(self, scale: float) -> None:
+        """Bigger letters for younger eyes: the line's height (and so its font) grows."""
+        self.setFixedHeight(round(BASE_HEIGHT * scale))
+        self.update()
 
     def sizeHint(self) -> QSize:
-        return QSize(900, 110)
+        return QSize(900, self.height())
 
     def set_session(self, session: TypingSession) -> None:
         self._session = session

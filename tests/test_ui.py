@@ -403,3 +403,53 @@ def test_keyboard_view_draws_the_uk_layout(qtbot):
     assert view._wrong == "#"
     tall = view._shape(keyboard.UK.rows[1][-1], drawn["enter"], 60, 8)
     assert tall.boundingRect().height() > drawn["enter"].height() * 1.5
+
+
+# Text size -----------------------------------------------------------------
+
+
+def test_bigger_text_from_settings(monkeypatch, store, window, player):
+    from typing_tutor.widgets.typing_view import BASE_HEIGHT
+
+    def fake_exec(dialog):
+        assert dialog.text_size() == "normal"
+        dialog.size_buttons["huge"].click()
+        return QDialog.DialogCode.Accepted
+
+    monkeypatch.setattr(SettingsDialog, "exec", fake_exec)
+    window.menu.settings_requested.emit()
+    assert ProfileStore(store.path).get(player.id).text_size == "huge"
+    assert window.practice.typing.height() == round(BASE_HEIGHT * 1.6)
+    assert "32px" in window.practice.hint.styleSheet()
+
+
+def test_each_player_gets_their_own_text_size(window, store, player):
+    from typing_tutor.widgets.typing_view import BASE_HEIGHT
+
+    other = store.add("Ava", "#ffb74d")
+    store.set_text_size(other.id, "large")
+    window.choose_profile(other.id)
+    assert window.practice.typing.height() == round(BASE_HEIGHT * 1.3)
+    window.choose_profile(player.id)
+    assert window.practice.typing.height() == BASE_HEIGHT
+
+
+def test_an_unknown_text_size_is_normal(qtbot, store, player):
+    from typing_tutor.theme import text_scale
+
+    player.text_size = "gigantic"
+    dlg = SettingsDialog(player)
+    qtbot.addWidget(dlg)
+    assert dlg.text_size() == "normal" and text_scale("gigantic") == 1.0
+
+
+@pytest.mark.parametrize("size", ["normal", "large", "huge"])
+def test_every_text_size_fits_the_smallest_window(window, store, player, size):
+    from typing_tutor.lessons import TOP_ROW
+
+    store.set_text_size(player.id, size)
+    window.resize(window.minimumSize())
+    window.choose_profile(player.id)
+    window.start_step(TOP_ROW, 5)
+    practice = window.practice
+    assert practice.layout().minimumSize().height() <= practice.height()

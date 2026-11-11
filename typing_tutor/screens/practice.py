@@ -22,9 +22,11 @@ from ..session import StepRun, stars_for
 from ..sounds import SoundPlayer
 from ..theme import repolish
 from ..ui import label, timer
+from ..widgets.hands_view import MIN_HEIGHT as HANDS_MIN_HEIGHT
 from ..widgets.hands_view import HandsView
+from ..widgets.keyboard_view import MIN_HEIGHT as KEYBOARD_MIN_HEIGHT
 from ..widgets.keyboard_view import KeyboardView
-from ..widgets.typing_view import TypingView
+from ..widgets.typing_view import BASE_HEIGHT, TypingView
 
 
 @dataclass
@@ -101,6 +103,19 @@ class PracticeScreen(QWidget):
         layout.addWidget(self.hands, 2)
 
         self._stats_timer = timer(self, 500, self._update_stats)
+        self.text_scale = 1.0
+
+    def set_text_scale(self, scale: float) -> None:
+        """Make the typing line, instruction and hint bigger (1.0 is normal)."""
+        self.text_scale = scale
+        self.typing.set_scale(scale)
+        for widget, size in ((self.instruction, 20), (self.hint, 20), (self.next_line, 17)):
+            widget.setStyleSheet(f"font-size: {round(size * scale)}px;")
+        # Make room for the bigger text by letting the pictures below shrink,
+        # so everything still fits in the smallest window.
+        extra = (BASE_HEIGHT + 75) * (scale - 1)
+        self.keyboard.setMinimumHeight(max(120, round(KEYBOARD_MIN_HEIGHT - extra * 0.45)))
+        self.hands.setMinimumHeight(max(70, round(HANDS_MIN_HEIGHT - extra * 0.55)))
 
     def start(self, play: Play) -> None:
         self._play = play

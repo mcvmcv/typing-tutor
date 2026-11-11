@@ -20,7 +20,7 @@ from .screens.profiles import ProfileScreen, SettingsDialog
 from .screens.progress_screen import ProgressScreen
 from .sounds import SoundPlayer
 from .storage import Profile, ProfileStore
-from .theme import apply_theme
+from .theme import apply_theme, text_scale
 from .updates import UpdateChecker
 
 
@@ -85,6 +85,7 @@ class MainWindow(QMainWindow):
         self.sounds.enabled = self.profile.sound
         self.sounds.key_clicks = self.profile.key_clicks
         self.practice.typing.space_dots = self.profile.space_dots
+        self.practice.set_text_scale(text_scale(self.profile.text_size))
 
     def show_profiles(self) -> None:
         self.profiles.refresh()
@@ -147,6 +148,7 @@ class MainWindow(QMainWindow):
             self.store.set_speed_goal(profile.id, dlg.speed_goal())
             self.store.set_sound(profile.id, dlg.sound_on(), dlg.key_clicks_on())
             self.store.set_space_dots(profile.id, dlg.space_dots_on())
+            self.store.set_text_size(profile.id, dlg.text_size())
             self._apply_settings()
             self.menu.refresh()
 

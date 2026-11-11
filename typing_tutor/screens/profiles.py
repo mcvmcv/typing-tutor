@@ -19,7 +19,7 @@ from PySide6.QtWidgets import (
 )
 
 from ..storage import Profile, ProfileStore
-from ..theme import AVATAR_COLORS, INK
+from ..theme import AVATAR_COLORS, INK, TEXT_SIZES
 from ..ui import clear_layout, label
 
 MAX_NAME = 12
@@ -252,6 +252,22 @@ class SettingsDialog(QDialog):
         line_heading = label("Typing line", "Heading")
         self.dots = QCheckBox("Show spaces as dots ( · )")
         self.dots.setChecked(profile.space_dots)
+        self.size_buttons: dict[str, QPushButton] = {}
+        self.sizes = QButtonGroup(self)
+        size_row = QHBoxLayout()
+        size_row.setSpacing(8)
+        size_row.addWidget(label("Text size:", "Stat"))
+        for key, (name, _scale) in TEXT_SIZES.items():
+            btn = QPushButton(name)
+            btn.setCheckable(True)
+            btn.setProperty("role", "segment")
+            btn.setChecked(key == profile.text_size)
+            self.sizes.addButton(btn)
+            self.size_buttons[key] = btn
+            size_row.addWidget(btn)
+        size_row.addStretch()
+        if self.sizes.checkedButton() is None:
+            self.size_buttons["normal"].setChecked(True)
 
         ok = QPushButton("Save")
         ok.setDefault(True)
@@ -275,6 +291,7 @@ class SettingsDialog(QDialog):
         layout.addWidget(self.clicks)
         layout.addSpacing(12)
         layout.addWidget(line_heading)
+        layout.addLayout(size_row)
         layout.addWidget(self.dots)
         layout.addSpacing(16)
         layout.addLayout(buttons)
@@ -290,3 +307,6 @@ class SettingsDialog(QDialog):
 
     def space_dots_on(self) -> bool:
         return self.dots.isChecked()
+
+    def text_size(self) -> str:
+        return next(k for k, btn in self.size_buttons.items() if btn.isChecked())
