@@ -1,8 +1,14 @@
+import random
+
+import pytest
+
+from typing_tutor.generator import build_lines
 from typing_tutor.lessons import (
     ALL_STEPS,
     HOME_ROW,
     KNOWN,
     LESSONS,
+    PUNCTUATION,
     first_unfinished,
     is_unlocked,
     next_step,
@@ -14,8 +20,8 @@ def stars_from(done: set[str]):
 
 
 def test_course_shape():
-    assert len(LESSONS) == 6
-    assert len(ALL_STEPS) == 40
+    assert len(LESSONS) == 7
+    assert len(ALL_STEPS) == 44
 
 
 def test_step_ids_are_unique():
@@ -70,3 +76,32 @@ def test_next_step_and_first_unfinished():
     assert first_unfinished(stars_from(done)) == ALL_STEPS[3]
     everything = {lesson.step_id(i) for lesson, i in ALL_STEPS}
     assert first_unfinished(stars_from(everything)) is None
+
+
+def test_punctuation_lesson_comes_before_the_stories():
+    keys = [lesson.key for lesson in LESSONS]
+    assert keys.index("punctuation") == keys.index("stories") - 1
+
+
+def test_quote_marks_are_explained_for_each_keyboard():
+    quotes = PUNCTUATION.steps[1]
+    assert "press '" in quotes.instruction_for("us")
+    assert "press 2" in quotes.instruction_for("uk")
+    assert quotes.instruction_for("dvorak") == quotes.instruction
+
+
+@pytest.mark.parametrize("index", range(len(PUNCTUATION.steps)))
+def test_punctuation_steps_practise_their_new_marks(index):
+    step = PUNCTUATION.steps[index]
+    lines = build_lines(PUNCTUATION, index, random.Random(index))
+    assert len(lines) == step.line_count
+    assert all(set(line) <= KNOWN[PUNCTUATION.step_id(index)] for line in lines)
+    assert set(step.new) <= set("".join(lines))
+
+
+def test_new_marks_never_appear_before_they_are_taught():
+    for lesson, i in ALL_STEPS:
+        if lesson is PUNCTUATION:
+            break
+        for line in build_lines(lesson, i, random.Random(i)):
+            assert not set(line) & set('!"-:'), (lesson.key, line)

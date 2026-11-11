@@ -32,6 +32,12 @@ class Step:
     kind: str = "drill"
     lines: tuple[str, ...] = ()
     line_count: int = 3
+    # Wording for keyboards where the new key is somewhere else, as
+    # ((layout code, instruction), ...). Falls back to `instruction`.
+    layout_instructions: tuple[tuple[str, str], ...] = ()
+
+    def instruction_for(self, layout: str) -> str:
+        return dict(self.layout_instructions).get(layout, self.instruction)
 
 
 @dataclass(frozen=True)
@@ -290,6 +296,59 @@ NUMBERS = Lesson(
     ),
 )
 
+PUNCTUATION = Lesson(
+    key="punctuation",
+    title="Punctuation Pros",
+    description='Add some sparkle with ! and " and - and :',
+    steps=(
+        Step(
+            "exclaim",
+            "Exclamation mark !",
+            "Hold Shift with your RIGHT pinky and press 1 with your left pinky. Wow!",
+            new="!",
+            kind="sentences",
+            lines=("wow! yes! go! stop! ha ha! oh no! hooray!",),
+            line_count=4,
+        ),
+        Step(
+            "quotes",
+            'Quote marks "',
+            "Quote marks go around the words someone says. Hold Shift with your "
+            "LEFT pinky and press ' with your right pinky.",
+            new='"',
+            kind="sentences",
+            lines=('"hi" "yes" "no" "help!" "Hello," said Pip.',),
+            line_count=4,
+            layout_instructions=(
+                (
+                    "uk",
+                    "Quote marks go around the words someone says. Hold Shift with "
+                    "your RIGHT pinky and press 2 with your left ring finger.",
+                ),
+            ),
+        ),
+        Step(
+            "dash-colon",
+            "Hyphen - and colon :",
+            "Your right pinky reaches up past 0 for - (hyphen). For : (colon), "
+            "hold Shift with your LEFT pinky and press ;",
+            new="-:",
+            kind="sentences",
+            lines=("ice-cream well-done blue-green 3:30 7:45 note: hi",),
+            line_count=4,
+        ),
+        Step(
+            "mix",
+            "All the marks",
+            'Sentences with every mark: ! " - and : Take your time!',
+            new='!"-:',
+            kind="sentences",
+            lines=('"Hooray!" said Kai. Party time: 4:30 at the ice-rink.',),
+            line_count=4,
+        ),
+    ),
+)
+
 STORY_TIME = Lesson(
     key="stories",
     title="Story Time",
@@ -297,7 +356,15 @@ STORY_TIME = Lesson(
     steps=tuple(_story(k) for k in ("kite", "snail", "pancakes", "stars")),
 )
 
-LESSONS: tuple[Lesson, ...] = (HOME_ROW, TOP_ROW, BOTTOM_ROW, CAPITALS, NUMBERS, STORY_TIME)
+LESSONS: tuple[Lesson, ...] = (
+    HOME_ROW,
+    TOP_ROW,
+    BOTTOM_ROW,
+    CAPITALS,
+    NUMBERS,
+    PUNCTUATION,
+    STORY_TIME,
+)
 
 # Every step in teaching order, as (lesson, step_index).
 ALL_STEPS: tuple[tuple[Lesson, int], ...] = tuple(
