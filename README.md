@@ -142,6 +142,14 @@ checked first, so a wrong or damaged file is refused with an explanation. New
 players are added (renamed, e.g. "Mia 2", if the name is taken), and if a
 player is already here it asks before replacing their progress.
 
+**Earlier copies:** the app also keeps copies by itself, in a `backups`
+folder next to `profiles.json`. It keeps one a day for the last week (how
+things were before that day's first change), and one just before a player is
+removed, a backup is loaded or you go back to a copy (the last 5 of those).
+"Earlier copies…" lists them so you can go back, e.g. to undo removing a
+player by mistake. It keeps a copy of how things are now first, so going back
+can be undone too.
+
 **Keyboard:** pick **US** or **UK** to match the computer's keyboard. The
 on-screen keyboard and finger hints follow it (on UK: the tall Enter, `#` by
 Enter, `\` by the left Shift, `"` on Shift+2 and `@` on Shift+'). Until you
@@ -151,7 +159,8 @@ the lessons are the same.
 
 ## Data
 
-Everything is stored in one JSON file (path above), saved atomically. A backup
+Everything is stored in one JSON file (path above), saved atomically, with
+automatic copies in the `backups` folder beside it. A backup
 file has the same format, and a copy of `profiles.json` also loads as a backup. If it
 ever can't be read, it's renamed to `profiles.broken-<time>.json` rather than
 overwritten.

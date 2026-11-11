@@ -7,7 +7,7 @@ from datetime import datetime
 import pytest
 from conftest import finish_steps, key_stat
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QFileDialog, QMessageBox
+from PySide6.QtWidgets import QDialog, QFileDialog, QMessageBox
 
 from typing_tutor import keyboard
 from typing_tutor.app import MainWindow
@@ -265,3 +265,97 @@ def test_with_no_choice_the_window_guesses_from_the_region(qtbot, store, monkeyp
     qtbot.addWidget(MainWindow(store))
     assert keyboard.current() is keyboard.UK
     assert store.keyboard is None  # a guess, not a choice
+
+
+# Earlier copies ----------------------------------------------------------------
+
+
+def test_earlier_copies_button_needs_a_copy(window, store, player):
+    window.show_parents()
+    assert not window.parents.copies_btn.isEnabled()
+    store.snapshot("Before something")
+    window.show_parents()
+    assert window.parents.copies_btn.isEnabled()
+
+
+def test_going_back_to_an_earlier_copy(window, store, player, monkeypatch, boxes):
+    from typing_tutor.screens.parents import EarlierCopiesDialog
+
+    store.delete(player.id)
+    seen = []
+
+    def choose(dialog):
+        seen.extend(dialog.list.item(i).text() for i in range(dialog.list.count()))
+        return QDialog.DialogCode.Accepted
+
+    monkeypatch.setattr(EarlierCopiesDialog, "exec", choose)
+    window.show_parents()
+    assert window.parents.cards == []
+    window.parents.copies_btn.click()
+    assert "Before removing Sam" in seen[0] and "Sam" in seen[0].splitlines()[1]
+    kind, _title, text = boxes.shown[0]
+    assert kind == "question" and "copy of how things are now is kept" in text
+    assert [c.values for c in window.parents.cards]  # Sam is back
+    assert store.get(player.id) is not None
+
+
+def test_saying_no_keeps_things_as_they_are(window, store, player, monkeypatch):
+    Boxes(monkeypatch, answer=QMessageBox.StandardButton.No)
+    store.snapshot("kept")
+    store.delete(player.id)
+    assert window.parents.restore_snapshot(store.snapshots()[0]) is False
+    assert store.profiles == []
+
+
+def test_cancelling_the_copies_dialog_does_nothing(window, store, player, monkeypatch, boxes):
+    from typing_tutor.screens.parents import EarlierCopiesDialog
+
+    store.snapshot("kept")
+    monkeypatch.setattr(EarlierCopiesDialog, "exec", lambda d: QDialog.DialogCode.Rejected)
+    window.parents.open_earlier_copies()
+    assert boxes.shown == []
+
+
+def test_a_damaged_copy_is_explained(window, store, player, boxes):
+    store.snapshot("kept")
+    snap = store.snapshots()[0]
+    snap.path.write_text('{"profiles": [{"id": 1}]}')
+    assert window.parents.restore_snapshot(snap) is False
+    assert boxes.shown[-1][0] == "warning"
+
+
+def test_a_failed_restore_save_is_explained(window, store, player, monkeypatch, boxes):
+    store.snapshot("kept")
+
+    def fail(*a):
+        raise PermissionError(13, "Permission denied")
+
+    monkeypatch.setattr(store, "save", fail)
+    assert window.parents.restore_snapshot(store.snapshots()[0]) is False
+    assert "Permission denied" in boxes.shown[-1][2]
+
+
+def test_copies_dialog_lists_and_picks(qtbot, store, player):
+    from typing_tutor.screens.parents import EarlierCopiesDialog
+
+    store.snapshot("first")
+    snaps = store.snapshots()
+    dialog = EarlierCopiesDialog(snaps)
+    qtbot.addWidget(dialog)
+    assert dialog.chosen() == snaps[0]
+    dialog.list.setCurrentRow(-1)
+    assert dialog.chosen() is None
+
+
+@pytest.mark.parametrize(
+    ("made", "text"),
+    [
+        (datetime(2026, 11, 10, 9, 5), "Today, 9:05"),
+        (datetime(2026, 11, 9, 17, 30), "Yesterday, 17:30"),
+        (datetime(2026, 11, 2, 8, 0), "Monday 2 November, 8:00"),
+    ],
+)
+def test_when_text(made, text):
+    from typing_tutor.screens.parents import when_text
+
+    assert when_text(made, NOW) == text

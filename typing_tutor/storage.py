@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import uuid
@@ -14,6 +15,12 @@ from PySide6.QtCore import QStandardPaths
 from .session import merge_key_stats
 
 BACKUP_FORMAT = "learn-typing-backup"
+
+# Automatic copies of the save file, kept in a "backups" folder beside it:
+# one a day (the progress as it was before that day's first change), plus one
+# just before anything big (removing a player, loading a backup, going back).
+DAILY_COPIES = 7
+EVENT_COPIES = 5
 
 
 class BackupError(Exception):
@@ -94,6 +101,16 @@ def read_backup(path: Path) -> list[Profile]:
     return [Profile.from_dict(p) for p in data["profiles"]]
 
 
+@dataclass
+class Snapshot:
+    """An automatic copy of everyone's progress."""
+
+    path: Path
+    made: datetime
+    reason: str  # e.g. "Start of the day" or "Before removing Mia"
+    names: list[str]
+
+
 def _write_json(path: Path, payload: dict) -> None:
     """Write atomically, so a crash never leaves half a file."""
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -143,6 +160,7 @@ class ProfileStore:
         # The computer's keyboard layout ("us" or "uk"), or None if never chosen.
         # It belongs to this computer, so backups don't carry it.
         self.keyboard: str | None = None
+        self.clock = datetime.now  # replaceable in tests
         self.load()
 
     @staticmethod
@@ -165,6 +183,7 @@ class ProfileStore:
             self.profiles = []
 
     def save(self) -> None:
+        self._daily_snapshot()
         data: dict = {"version": 1, "profiles": [asdict(p) for p in self.profiles]}
         if self.keyboard:
             data["keyboard"] = self.keyboard
@@ -172,6 +191,71 @@ class ProfileStore:
 
     def set_keyboard(self, code: str) -> None:
         self.keyboard = code
+        self.save()
+
+    # Automatic copies -----------------------------------------------------
+
+    @property
+    def snapshot_dir(self) -> Path:
+        return self.path.parent / "backups"
+
+    def _daily_snapshot(self) -> None:
+        """Before the first change of the day, keep a copy of the file as it was."""
+        name = f"daily-{self.clock().date().isoformat()}.json"
+        if not (self.snapshot_dir / name).exists():
+            self._copy_file(name, "Start of the day")
+            self._prune("daily-", DAILY_COPIES)
+
+    def snapshot(self, reason: str) -> None:
+        """Keep a copy of the saved progress before something big changes it."""
+        stamp = self.clock().strftime("%Y%m%d-%H%M%S-%f")
+        n = 0
+        while (self.snapshot_dir / f"before-{stamp}-{n}.json").exists():
+            n += 1  # two in the same instant
+        self._copy_file(f"before-{stamp}-{n}.json", reason)
+        self._prune("before-", EVENT_COPIES)
+
+    def _copy_file(self, name: str, reason: str) -> None:
+        try:
+            data = json.loads(self.path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return  # nothing saved yet (or unreadable), so nothing to keep
+        if not isinstance(data, dict) or not data.get("profiles"):
+            return
+        data["snapshot"] = {"reason": reason, "made": self.clock().isoformat(timespec="seconds")}
+        # A copy that can't be written mustn't stop progress being saved.
+        with contextlib.suppress(OSError):
+            _write_json(self.snapshot_dir / name, data)
+
+    def _prune(self, prefix: str, keep: int) -> None:
+        old = sorted(self.snapshot_dir.glob(f"{prefix}*.json"), reverse=True)[keep:]
+        for path in old:
+            path.unlink(missing_ok=True)
+
+    def snapshots(self) -> list[Snapshot]:
+        """The automatic copies, newest first. Unreadable ones are skipped."""
+        found = []
+        for path in self.snapshot_dir.glob("*.json"):
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+                info = data["snapshot"]
+                made = datetime.fromisoformat(info["made"])
+                names = [p["name"] for p in data["profiles"]]
+                found.append(Snapshot(path, made, str(info["reason"]), names))
+            except (OSError, ValueError, KeyError, TypeError):
+                continue
+        # Newest first; at the same moment, the copy made for a reason comes first.
+        return sorted(
+            found,
+            key=lambda snap: (snap.made, snap.path.name.startswith("before-"), snap.path.name),
+            reverse=True,
+        )
+
+    def restore(self, snapshot: Snapshot) -> None:
+        """Put everyone's progress back to an earlier copy (after keeping today's)."""
+        profiles = read_backup(snapshot.path)  # raises BackupError if it's damaged
+        self.snapshot("Before going back to an earlier copy")
+        self.profiles = profiles
         self.save()
 
     # Backups -------------------------------------------------------------
@@ -206,6 +290,7 @@ class ProfileStore:
     def import_profiles(self, incoming: list[Profile]) -> ImportPlan:
         """Add the backup's players, replacing any that are already here."""
         plan = self.plan_import(incoming)
+        self.snapshot("Before loading a backup")
         for profile in plan.replaced:
             i = next(i for i, p in enumerate(self.profiles) if p.id == profile.id)
             self.profiles[i] = profile
@@ -230,6 +315,9 @@ class ProfileStore:
         return profile
 
     def delete(self, profile_id: str) -> None:
+        profile = self.get(profile_id)
+        if profile is not None:
+            self.snapshot(f"Before removing {profile.name}")
         self.profiles = [p for p in self.profiles if p.id != profile_id]
         self.save()
 
