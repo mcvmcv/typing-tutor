@@ -18,6 +18,7 @@ from .screens.parents import ParentScreen
 from .screens.practice import PracticeScreen, StepResult
 from .screens.profiles import ProfileScreen, SettingsDialog
 from .screens.progress_screen import ProgressScreen
+from .screens.race_screen import RaceScreen
 from .sounds import SoundPlayer
 from .storage import Profile, ProfileStore
 from .theme import apply_theme, text_scale
@@ -44,8 +45,18 @@ class MainWindow(QMainWindow):
         self.parents = ParentScreen(store, self.updates)
         self.game = GameScreen(self.sounds)
         self.game.record_game = self._record_game
+        self.race = RaceScreen(self.sounds)
+        self.race.record_race = self._record_race
         self.stack = QStackedWidget()
-        screens = (self.profiles, self.menu, self.practice, self.progress, self.game, self.parents)
+        screens = (
+            self.profiles,
+            self.menu,
+            self.practice,
+            self.progress,
+            self.game,
+            self.race,
+            self.parents,
+        )
         for screen in screens:
             self.stack.addWidget(screen)
         self.setCentralWidget(self.stack)
@@ -62,6 +73,8 @@ class MainWindow(QMainWindow):
         self.parents.details_requested.connect(self.show_player_progress)
         self.menu.game_requested.connect(self.show_game)
         self.game.menu_requested.connect(self.show_menu)
+        self.menu.race_requested.connect(self.show_race)
+        self.race.menu_requested.connect(self.show_menu)
         self.practice.menu_requested.connect(self.show_menu)
         self.practice.step_completed.connect(self._record)
         self.practice.sound_toggled.connect(lambda on: self.store.set_sound(self.profile.id, on))
@@ -130,6 +143,17 @@ class MainWindow(QMainWindow):
         profile = self.profile
         self.stack.setCurrentWidget(self.game)
         self.game.open(game_words(known_keys(profile)), profile.game_best)
+
+    def show_race(self) -> None:
+        profile = self.profile
+        self.stack.setCurrentWidget(self.race)
+        self.race.open(
+            known_keys(profile), profile.history, profile.race_best, profile.name, profile.color
+        )
+
+    def _record_race(self, difficulty: str, wpm: float, key_stats: dict) -> tuple[bool, float]:
+        is_best = self.store.record_race(self.profile.id, difficulty, wpm, key_stats)
+        return is_best, self.profile.race_best.get(difficulty, 0.0)
 
     def _record_game(self, difficulty: str, score: int, key_stats: dict) -> tuple[bool, int]:
         is_best = self.store.record_game(self.profile.id, difficulty, score, key_stats)

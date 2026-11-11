@@ -25,6 +25,14 @@ A friendly touch-typing tutor for kids, built with PySide6.
     <td align="center">Progress chart</td>
     <td align="center">For grown-ups</td>
   </tr>
+  <tr>
+    <td><img src="docs/screenshots/snail-race.png" alt="Snail Race: two snails racing along a garden track while the player types"></td>
+    <td><img src="docs/screenshots/players.png" alt="Player picker with three players"></td>
+  </tr>
+  <tr>
+    <td align="center">Snail Race</td>
+    <td align="center">Pick a player</td>
+  </tr>
 </table>
 
 ## Download and play
@@ -106,6 +114,18 @@ together" step. Words on balloons float up; type a word to pop its balloon,
 and don't let 3 float away. It speeds up every 8 pops. Words only use keys the
 player has learned. Easy/Medium/Hard set the starting speed and word length,
 best scores are kept per difficulty, and game keystrokes feed the tricky-keys
+stats. Esc pauses.
+
+## Snail Race
+
+A second game on the lesson menu, unlocked at the same time. After a 3-2-1
+countdown, the player's snail moves one correct key at a time along a garden
+track, racing Shelly, a friendly rival snail. The race text uses only keys the
+player has learned. Shelly's pace comes from the player's own speed (the
+median WPM of their last 10 steps): 70%, 90% or 110% of it on Easy, Medium or
+Hard. Mistakes don't move the snail back, it just waits for the right key, and
+the race always ends at the player's finish so nobody is cut off. The fastest
+race on each difficulty is kept, and race keystrokes feed the tricky-keys
 stats. Esc pauses.
 
 ## Sounds

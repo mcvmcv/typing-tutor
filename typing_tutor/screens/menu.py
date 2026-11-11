@@ -42,6 +42,7 @@ class LessonMenuScreen(QWidget):
     settings_requested = Signal()
     progress_requested = Signal()
     game_requested = Signal()
+    race_requested = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -82,10 +83,19 @@ class LessonMenuScreen(QWidget):
             "QPushButton:disabled { background: #ebe4d6; color: #aaa294; font-size: 15px; }"
         )
         self.game_btn.clicked.connect(self.game_requested)
+        self.race_btn = QPushButton()
+        self.race_btn.setMinimumHeight(64)
+        self.race_btn.setStyleSheet(
+            "QPushButton { background: #b5e8a3; font-size: 20px; }"
+            "QPushButton:hover { background: #9edd88; }"
+            "QPushButton:disabled { background: #ebe4d6; color: #aaa294; font-size: 15px; }"
+        )
+        self.race_btn.clicked.connect(self.race_requested)
         actions = QHBoxLayout()
         actions.setSpacing(14)
-        actions.addWidget(self.continue_btn, 3)
+        actions.addWidget(self.continue_btn, 2)
         actions.addWidget(self.game_btn, 1)
+        actions.addWidget(self.race_btn, 1)
 
         # Tricky keys panel.
         self.tricky_panel = frame("Panel")
@@ -158,6 +168,8 @@ class LessonMenuScreen(QWidget):
         unlocked = len(game_words(known_keys(self.profile))) >= MIN_WORDS
         self.game_btn.setEnabled(unlocked)
         self.game_btn.setText("Balloon Pop" if unlocked else "Balloon Pop\nunlocks after step 5")
+        self.race_btn.setEnabled(unlocked)
+        self.race_btn.setText("Snail Race" if unlocked else "Snail Race\nunlocks after step 5")
         # Wait for the layout to settle, then bring the current step into view.
         QTimer.singleShot(0, self._scroll_to_next)
 

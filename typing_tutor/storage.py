@@ -71,6 +71,9 @@ def _check_profile(data: object) -> None:
         raise BackupError(f"{name}'s key stats in the file aren't in the right format.")
     if not isinstance(game_best, dict) or not all(_is_number(v) for v in game_best.values()):
         raise BackupError(f"{name}'s Balloon Pop scores aren't in the right format.")
+    race_best = data.get("race_best", {})
+    if not isinstance(race_best, dict) or not all(_is_number(v) for v in race_best.values()):
+        raise BackupError(f"{name}'s Snail Race speeds aren't in the right format.")
 
 
 def read_backup(path: Path) -> list[Profile]:
@@ -143,6 +146,8 @@ class Profile:
     key_clicks: bool = True
     # Show upcoming spaces in the typing line as centred dots.
     space_dots: bool = True
+    # Snail Race best speed (WPM) per difficulty.
+    race_best: dict[str, float] = field(default_factory=dict)
     # How big the practice text is: "normal", "large" or "huge" (see TEXT_SIZES).
     text_size: str = "normal"
 
@@ -367,6 +372,18 @@ class ProfileStore:
         best = score > profile.game_best.get(difficulty, 0)
         if best:
             profile.game_best[difficulty] = score
+        self.save()
+        return best
+
+    def record_race(self, profile_id: str, difficulty: str, wpm: float, key_stats: dict) -> bool:
+        """Save a finished race. Returns True if it's the player's fastest on that difficulty."""
+        profile = self.get(profile_id)
+        if profile is None:
+            return False
+        self._merge_key_stats(profile, key_stats)
+        best = wpm > profile.race_best.get(difficulty, 0)
+        if best:
+            profile.race_best[difficulty] = round(wpm, 1)
         self.save()
         return best
 

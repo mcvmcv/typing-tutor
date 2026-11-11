@@ -178,6 +178,23 @@ def main(out: Path = OUT) -> list[Path]:
         saved.append(_save(window, "balloon-pop", out))
 
         window.show_menu()
+        window.show_race()
+        race = window.race
+        race.rng = random.Random(2)
+        race.start_race("medium")
+        race._timer.stop()
+        r = race.state
+        assert r is not None
+        r.update(3.0)
+        for ch in r.text[:24]:
+            r.update(0.42)
+            r.type(ch)
+        r.type("#")  # a slip, so the cursor shows red
+        race._wiggle = 0
+        _settle(app)
+        saved.append(_save(window, "snail-race", out))
+
+        window.show_menu()
         window.choose_profile(sam.id)
         window.show_progress()
         _settle(app)
