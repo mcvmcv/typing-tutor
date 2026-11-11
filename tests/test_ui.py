@@ -210,7 +210,7 @@ def test_progress_screen(qtbot, window, store, player):
     window.menu.progress_requested.emit()
     screen = window.progress
     assert window.stack.currentWidget() is screen
-    assert screen.steps.value.text() == "5 of 44" and screen.stars.value.text() == "15 of 132"
+    assert screen.steps.value.text() == "5 of 48" and screen.stars.value.text() == "15 of 144"
     assert screen.table.rowCount() == 5
     assert screen.by_attempt.isChecked() and len(screen.chart._points) == 5
     screen.by_day.click()

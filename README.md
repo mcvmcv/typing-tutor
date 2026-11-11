@@ -82,7 +82,7 @@ updating keeps everyone's stars:
 
 ## Course
 
-44 steps in 7 lessons: Home Row Heroes, Top Row Climbers, Bottom Row Divers,
+48 steps in 7 lessons: Home Row Heroes, Top Row Climbers, Bottom Row Divers,
 Big Letters (Shift, ' and ?), Number Row, Punctuation Pros (! " - and :), and
 Story Time. Where a key is somewhere else on a UK keyboard (`"`), the step
 explains it for that keyboard. Each step is a few

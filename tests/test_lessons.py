@@ -21,7 +21,7 @@ def stars_from(done: set[str]):
 
 def test_course_shape():
     assert len(LESSONS) == 7
-    assert len(ALL_STEPS) == 44
+    assert len(ALL_STEPS) == 48
 
 
 def test_step_ids_are_unique():
@@ -105,3 +105,12 @@ def test_new_marks_never_appear_before_they_are_taught():
             break
         for line in build_lines(lesson, i, random.Random(i)):
             assert not set(line) & set('!"-:'), (lesson.key, line)
+
+
+def test_every_story_can_be_typed_with_the_keys_taught_by_then():
+    from typing_tutor.lessons import STORY_TIME
+
+    assert len(STORY_TIME.steps) == 8
+    for i, step in enumerate(STORY_TIME.steps):
+        assert set("".join(step.lines)) <= KNOWN[STORY_TIME.step_id(i)], step.title
+        assert all(len(line) <= 46 for line in step.lines)

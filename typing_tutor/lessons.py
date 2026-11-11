@@ -353,7 +353,7 @@ STORY_TIME = Lesson(
     key="stories",
     title="Story Time",
     description="Put it all together with some short stories.",
-    steps=tuple(_story(k) for k in ("kite", "snail", "pancakes", "stars")),
+    steps=tuple(_story(k) for k in STORIES),
 )
 
 LESSONS: tuple[Lesson, ...] = (

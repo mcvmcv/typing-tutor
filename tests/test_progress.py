@@ -53,8 +53,8 @@ def test_summary(store, player):
     store.record_result(player.id, "review", 30, 100, 3)  # reviews aren't course steps
     s = summary(player)
     assert s.best_wpm == 14
-    assert s.stars == 5 and s.max_stars == 132
-    assert s.steps_done == 2 and s.total_steps == 44
+    assert s.stars == 5 and s.max_stars == 144
+    assert s.steps_done == 2 and s.total_steps == 48
     assert s.practice_days == 1
     assert s.recent_accuracy == pytest.approx((90 + 98 + 100) / 3)
 
