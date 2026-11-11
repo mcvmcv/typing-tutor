@@ -14,6 +14,7 @@ from ..ui import timer
 
 NEUTRAL_KEY = QColor("#ddd5c6")
 WRONG_KEY = QColor("#ff6b6b")
+MIN_HEIGHT = 175
 
 
 class KeyboardView(QWidget):
@@ -27,7 +28,7 @@ class KeyboardView(QWidget):
         self._pulse_timer = timer(self, 33, self.update)
         self._wrong_timer = timer(self, 400, self._clear_wrong, single_shot=True)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.setMinimumSize(560, 190)
+        self.setMinimumSize(560, MIN_HEIGHT)
 
     def sizeHint(self) -> QSize:
         return QSize(960, 320)

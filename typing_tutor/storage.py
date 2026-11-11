@@ -143,6 +143,8 @@ class Profile:
     key_clicks: bool = True
     # Show upcoming spaces in the typing line as centred dots.
     space_dots: bool = True
+    # How big the practice text is: "normal", "large" or "huge" (see TEXT_SIZES).
+    text_size: str = "normal"
 
     def stars(self, step_id: str) -> int:
         return self.best.get(step_id, {}).get("stars", 0)
@@ -342,6 +344,12 @@ class ProfileStore:
             profile.sound = sound
             if key_clicks is not None:
                 profile.key_clicks = key_clicks
+            self.save()
+
+    def set_text_size(self, profile_id: str, size: str) -> None:
+        profile = self.get(profile_id)
+        if profile is not None:
+            profile.text_size = size
             self.save()
 
     def set_space_dots(self, profile_id: str, on: bool) -> None:

@@ -8,6 +8,15 @@ from PySide6.QtWidgets import QApplication, QStyleFactory
 BG = "#fff8e7"
 INK = "#2b2b2b"
 MUTED = "#7a7062"
+
+# Practice text sizes a player can pick: key -> (name, scale).
+TEXT_SIZES = {"normal": ("Normal", 1.0), "large": ("Large", 1.3), "huge": ("Extra large", 1.6)}
+
+
+def text_scale(size: str) -> float:
+    return TEXT_SIZES.get(size, TEXT_SIZES["normal"])[1]
+
+
 SKIN = "#f6e6d2"
 GOOD = "#2e9e48"
 FIXED = "#e08a00"

@@ -122,6 +122,11 @@ Upcoming spaces in the line being typed show as faint centred dots ( · ) so
 they aren't missed. Each player can turn the dots off in Settings; the
 highlighted cursor still shows when a space is next.
 
+Each player can also pick a **text size** in Settings (Normal, Large or Extra
+large). It makes the typing line, instruction and hint bigger, for younger
+children or a small screen. The keyboard and hands pictures shrink to make
+room, so it still fits in the smallest window.
+
 ## Progress screen
 
 "My progress" on the lesson menu shows best speed, recent accuracy, stars,

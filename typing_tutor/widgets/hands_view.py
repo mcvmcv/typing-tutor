@@ -10,6 +10,7 @@ from ..keyboard import HOME_KEYS
 from ..theme import INK, SKIN, finger_color, mix
 
 FINGER_LENGTH = {"5": 0.55, "4": 0.8, "3": 0.92, "2": 0.78}
+MIN_HEIGHT = 130
 
 
 class HandsView(QWidget):
@@ -17,7 +18,7 @@ class HandsView(QWidget):
         super().__init__(parent)
         self._active: tuple[str, ...] = ()
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        self.setMinimumHeight(170)
+        self.setMinimumHeight(MIN_HEIGHT)
 
     def sizeHint(self) -> QSize:
         return QSize(700, 200)
