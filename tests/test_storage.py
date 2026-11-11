@@ -356,3 +356,13 @@ def test_a_copy_that_cant_be_written_doesnt_stop_saving(clocked):
     clocked.clock.advance(days=1)
     clocked.set_speed_goal(sam.id, 15)
     assert ProfileStore(clocked.path).get(sam.id).speed_goal == 15
+
+
+def test_update_checks_are_off_until_turned_on(store, tmp_path):
+    assert store.check_updates is False
+    store.save()
+    assert "check_updates" not in json.loads(store.path.read_text())
+    store.set_check_updates(True)
+    assert ProfileStore(store.path).check_updates is True
+    store.set_check_updates(False)
+    assert ProfileStore(store.path).check_updates is False

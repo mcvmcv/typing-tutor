@@ -42,6 +42,17 @@ def themed_app(qapp):
 
 
 @pytest.fixture(autouse=True)
+def no_network(monkeypatch):
+    """Tests never go online: any network request fails the test."""
+    from PySide6.QtNetwork import QNetworkAccessManager
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("tests must not use the network")
+
+    monkeypatch.setattr(QNetworkAccessManager, "get", refuse)
+
+
+@pytest.fixture(autouse=True)
 def us_keyboard(monkeypatch):
     """Every test starts on a US keyboard, whatever this computer's region."""
     monkeypatch.setattr(keyboard, "system_layout", lambda: "us")

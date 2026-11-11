@@ -9,6 +9,7 @@ from PySide6.QtCore import QStandardPaths, Qt, Signal
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QButtonGroup,
+    QCheckBox,
     QDialog,
     QFileDialog,
     QFrame,
@@ -23,12 +24,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from .. import keyboard
+from .. import __version__, keyboard
 from ..keyboard import fingers_for_char
 from ..progress import Overview, days_ago, overview
 from ..storage import BackupError, ImportPlan, Profile, ProfileStore, Snapshot, read_backup
 from ..theme import INK, finger_color
 from ..ui import clear_layout, label
+from ..updates import DOWNLOAD_PAGE, UpdateChecker, is_newer
 from .menu import chip_text
 
 STATS = (
@@ -211,9 +213,10 @@ class ParentScreen(QWidget):
     back_requested = Signal()
     details_requested = Signal(str)
 
-    def __init__(self, store: ProfileStore, parent=None):
+    def __init__(self, store: ProfileStore, updates: UpdateChecker | None = None, parent=None):
         super().__init__(parent)
         self.store = store
+        self.updates = updates
 
         back = QPushButton("←  Players")
         back.setProperty("role", "secondary")
@@ -292,6 +295,25 @@ class ParentScreen(QWidget):
         settings.addLayout(keys_row, 0, 1)
         settings.addWidget(label("Progress:", "Heading"), 1, 0)
         settings.addLayout(backup_row, 1, 1)
+
+        self.updates_box = QCheckBox("Tell me when a new version is out")
+        self.updates_box.setToolTip(
+            "Asks GitHub for the latest version when the app starts. "
+            "Nothing about you or the children is sent."
+        )
+        self.updates_box.toggled.connect(self.set_check_updates)
+        self.update_note = label("", "Subtitle")
+        self.update_note.setOpenExternalLinks(True)
+        self.update_note.setTextFormat(Qt.TextFormat.RichText)
+        updates_row = QHBoxLayout()
+        updates_row.setSpacing(16)
+        updates_row.addWidget(self.updates_box)
+        updates_row.addWidget(self.update_note)
+        updates_row.addStretch()
+        settings.addWidget(label("Updates:", "Heading"), 2, 0)
+        settings.addLayout(updates_row, 2, 1)
+        if updates is not None:
+            updates.checked.connect(self._show_update)
         settings.setColumnStretch(1, 1)
 
         layout = QVBoxLayout(self)
@@ -322,7 +344,36 @@ class ParentScreen(QWidget):
             )
         self.save_btn.setEnabled(bool(self.cards))
         self.copies_btn.setEnabled(bool(self.store.snapshots()))
+        self.updates_box.blockSignals(True)
+        self.updates_box.setChecked(self.store.check_updates)
+        self.updates_box.blockSignals(False)
+        latest = (self.updates.latest or "") if self.updates else ""
+        self._show_update(latest, quiet=True)
         self._show_keyboard()
+
+    # Updates -------------------------------------------------------------
+
+    def set_check_updates(self, on: bool) -> None:
+        self.store.set_check_updates(on)
+        if on and self.updates is not None:
+            self.update_note.setText("Checking…")
+            self.updates.check()
+        else:
+            self._show_update("", quiet=True)
+
+    def _show_update(self, latest: str, quiet: bool = False) -> None:
+        """Show what the last check found. `quiet`: say nothing if there's no news."""
+        if not self.store.check_updates:
+            self.update_note.setText("")
+        elif latest and is_newer(latest):
+            self.update_note.setText(
+                f"<b>Version {latest} is out!</b> "
+                f'<a href="{DOWNLOAD_PAGE}">Download it</a> (you have {__version__})'
+            )
+        elif latest:
+            self.update_note.setText(f"You have the latest version ({__version__}).")
+        elif not quiet:
+            self.update_note.setText("Couldn't check just now. It'll try again next time.")
 
     # Keyboard layout -----------------------------------------------------
 

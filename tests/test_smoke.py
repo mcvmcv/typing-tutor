@@ -100,3 +100,19 @@ def test_fails_when_the_icon_is_missing(themed_app, no_sound_card, monkeypatch, 
     monkeypatch.setattr("typing_tutor.app.app_icon", lambda: QIcon())
     assert smoke.run(themed_app) == 1
     assert "icon:     FAILED" in capsys.readouterr().out
+
+
+class NoTls:
+    @staticmethod
+    def supportsSsl():
+        return False
+
+    @staticmethod
+    def activeBackend():
+        return ""
+
+
+def test_fails_without_https(themed_app, no_sound_card, monkeypatch, capsys):
+    monkeypatch.setattr(smoke, "QSslSocket", NoTls)
+    assert smoke.run(themed_app) == 1
+    assert "https:    FAILED (no TLS backend)" in capsys.readouterr().out
