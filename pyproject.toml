@@ -12,7 +12,10 @@ license-files = ["LICENSE"]
 # 3.12+: PySide6 6.12 has a refcount bug on None that crashes Python 3.11
 # during painting; from 3.12, None is immortal (PEP 683) so it's harmless.
 requires-python = ">=3.12"
-dependencies = ["PySide6>=6.6"]
+# Only the Qt parts the app uses: Essentials (widgets, drawing, networking) and
+# Addons (QtMultimedia, for sounds). The all-in-one "PySide6" package would also
+# pull in WebEngine and Pdf, about 285 MB the app never touches.
+dependencies = ["PySide6-Essentials>=6.6", "PySide6-Addons>=6.6"]
 
 [project.optional-dependencies]
 dev = [
